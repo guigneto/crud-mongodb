@@ -1,0 +1,66 @@
+{
+    "editora": {
+        "idEditora": 1,
+        "dscEditora": "HarperCollins"
+    },
+
+    "autor": {
+        "idAutor": 1,
+        "nomAutor": "J.R.R. Tolkien"
+    },
+
+    "produto": {
+        "idProd": 1,
+        "dscTituloProd": "O Senhor dos Anéis",
+        "valMultaDiarProd": 2.0,
+        "valVendaProd": 50.0,
+        "dscTipoProd": "livro",
+        "dscFormatoProd": null,
+        "idEditora": 1,
+        "autores": [
+            { "idAutor": 1, "nomAutor": "J.R.R. Tolkien" }
+        ],
+        "exemplares": [
+            { "idExemplar": 1 },
+            { "idExemplar": 2 }
+        ]
+    },
+
+    "associado": {
+        "idAssoc": 1,
+        "nomAssoc": "Maria Souza",
+        "indSexoAssoc": "F",
+        "dscEnderecoAssoc": "Rua das Palmeiras, 123 - Curitiba/PR",
+        "dscTipoAssoc": "comum",
+        "endereco": {
+            "dscTipoLogradouro": "Rua",
+            "dscNomeLogradouroEnder": "Rua das Palmeiras",
+            "numNumeroEnder": 123,
+            "dscComplementoEnder": null,
+            "dscBairroEnder": "Centro",
+            "dscCidadeEnder": "Curitiba",
+            "dscUFEnder": "PR"
+        }
+    },
+
+    "emprestimo": {
+        "idEmpr": 1,
+        "idAssoc": 1,
+        "idExemplar": 1,
+        "idProd": 1,
+        "datRetiradaEmpr": "2026-05-01",
+        "datPrevEntregaEmpr": "2026-05-08",
+        "datEfetEntregaEmpr": "2026-05-12",
+        "multa": {
+            "idMulta": 1,
+            "dscTipoMulta": "atraso",
+            "valMulta": 8.0,
+            "pagamento": {
+                "idPagto": 1,
+                "valPagto": 8.0,
+                "dscFormaPagto": "pix",
+                "valDescPagto": 0.0
+            }
+        }
+    }
+}
