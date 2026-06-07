@@ -194,7 +194,7 @@ function EmprestimoForm({ initial, onSubmit, onCancel }: { initial?: Emprestimo;
     e.preventDefault()
     if (!form.idAssoc || !form.idExemplar || !form.datPrevEntrEmpr) { setError('Todos os campos são obrigatórios.'); return }
     setSaving(true); setError('')
-    try { await onSubmit(form) } catch { setError('Erro ao salvar.') } finally { setSaving(false) }
+    try { await onSubmit(form) } catch (err: any) { setError(err?.response?.data?.error ?? 'Erro ao salvar.') } finally { setSaving(false) }
   }
 
   const s = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }))
