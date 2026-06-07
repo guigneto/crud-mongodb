@@ -21,6 +21,18 @@ export const getEmprestimoById = async (req, res) => {
 
 export const createEmprestimo = async (req, res) => {
   try {
+    const { idAssoc } = req.body;
+    const emprestimosAtivos = await Emprestimo.countDocuments({
+      idAssoc,
+      datEfetEntrEmpr: null,
+    });
+
+    if (emprestimosAtivos >= 3) {
+      return res.status(400).json({
+        error: 'Associado já possui 3 empréstimos ativos. Devolva um livro antes de realizar novo empréstimo.',
+      });
+    }
+
     const emprestimo = await Emprestimo.create(req.body);
     res.status(201).json(emprestimo);
   } catch (error) {
