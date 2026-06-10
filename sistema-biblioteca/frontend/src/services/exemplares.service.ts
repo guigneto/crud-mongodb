@@ -3,6 +3,8 @@ import api from './api';
 export interface Exemplar {
   _id?: string;
   idProd: string;
+  codExemplar?: string;
+  estado?: string;
 }
 
 export const getExemplares   = ()                               => api.get<Exemplar[]>('/exemplares');

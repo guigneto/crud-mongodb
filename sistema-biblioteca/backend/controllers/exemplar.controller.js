@@ -1,4 +1,5 @@
 import Exemplar from '../models/exemplar.model.js';
+import Produto from '../models/produto.model.js';
 
 export const getExemplares = async (req, res) => {
   try {
@@ -21,7 +22,28 @@ export const getExemplarById = async (req, res) => {
 
 export const createExemplar = async (req, res) => {
   try {
-    const exemplar = await Exemplar.create(req.body);
+    const { idProd } = req.body;
+    let codExemplar = req.body.codExemplar;
+    
+    if (!codExemplar && idProd) {
+      const produto = await Produto.findById(idProd);
+      if (produto && produto.codProd) {
+        const existing = await Exemplar.find({ idProd });
+        let maxSeq = 0;
+        existing.forEach(ex => {
+          if (ex.codExemplar && ex.codExemplar.startsWith(produto.codProd + '-')) {
+            const seqStr = ex.codExemplar.replace(produto.codProd + '-', '');
+            const seq = parseInt(seqStr, 10);
+            if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+          }
+        });
+        if (maxSeq === 0) maxSeq = existing.length; // fallback for un-migrated DB
+        
+        codExemplar = `${produto.codProd}-${String(maxSeq + 1).padStart(2, '0')}`;
+      }
+    }
+
+    const exemplar = await Exemplar.create({ ...req.body, codExemplar });
     res.status(201).json(exemplar);
   } catch (error) {
     res.status(400).json({ error: error.message });

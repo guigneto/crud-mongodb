@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
 const produtoSchema = new mongoose.Schema({
+    codProd: {
+        type: String,
+        trim: true,
+    },
     dscTituloProd: {
         type: String,
         required: [true, 'Título é obrigatório'],
@@ -14,15 +18,10 @@ const produtoSchema = new mongoose.Schema({
         min: [0, 'O valor da multa diária não pode ser negativo'],
         default: 0,
     },
-    valVendaProd: {
-        type: Number,
-        required: [true, 'Valor de venda é obrigatório'],
-        min: [0, 'O valor de venda não pode ser negativo'],
-    },
     dscTipoProd: {
         type: String,
         required: [true, 'Tipo de produto é obrigatório'],
-        enum: ['livro', 'cd', 'dvd', 'revista', 'jornal', 'nuvem'],
+        enum: ['livro', 'cd', 'dvd', 'revista', 'jornal', 'nuvem', 'mapa', 'audiobook', 'software', 'outro'],
     },
     dscFormatoProd: {
         type: String,
@@ -33,6 +32,19 @@ const produtoSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Editora é obrigatória'],
     },
+    numAnoPublProd: {
+        type: Date,
+        default: null,
+    },
+    numISBNProd: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+    dscCategoriaProd: [{
+        type: String,
+        trim: true,
+    }],
     autores: [
         {
             idAutor: {

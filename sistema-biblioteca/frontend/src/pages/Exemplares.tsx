@@ -3,6 +3,7 @@ import { Copy } from 'lucide-react'
 import Modal from '../components/Modal'
 import TableActions from '../components/TableActions'
 import SearchBar from '../components/SearchBar'
+import CustomSelect from '../components/CustomSelect'
 import { type Exemplar, getExemplares, createExemplar, updateExemplar, deleteExemplar } from '../services/exemplares.service'
 import { getProdutos, type Produto } from '../services/produtos.service'
 
@@ -75,15 +76,19 @@ export default function Exemplares() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Exemplares</h1>
-          <p className="text-gray-500 mt-1">{data.length} exemplar(es) cadastrado(s)</p>
+          <p className="text-sm text-gray-500 mt-1">Gerencie os itens físicos do acervo</p>
         </div>
-        <button onClick={openNew} className={btn}><Copy size={16} /> Novo Exemplar</button>
+        <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <Copy size={16} /> Novo Exemplar
+        </button>
       </div>
 
-      <div className="mb-4 max-w-xs"><SearchBar placeholder="Buscar exemplar por livro..." onSearch={setQuery} /></div>
+      <div className="mb-6 w-full">
+        <SearchBar placeholder="Buscar exemplar por livro..." onSearch={setQuery} />
+      </div>
 
       {loading ? <Skeleton /> : !filtered.length ? <p className="text-center text-gray-400 py-16">Nenhum exemplar encontrado.</p> : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -93,7 +98,14 @@ export default function Exemplares() {
               {paginated.map((e, i) => (
                 <tr key={e._id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-gray-400 text-xs">{(page - 1) * ITEMS_PER_PAGE + i + 1}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{produtos[e.idProd] || e.idProd}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {produtos[e.idProd] || e.idProd}
+                    {(() => {
+                      const pEx = data.filter(item => item.idProd === e.idProd);
+                      const idx = pEx.findIndex(item => item._id === e._id);
+                      return idx !== -1 ? ` (Exemplar #${idx + 1})` : '';
+                    })()}
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{(e as { createdAt?: string }).createdAt?.slice(0, 10) ?? '—'}</td>
                   <td className="px-4 py-3"><TableActions onEdit={() => openEdit(e)} onDelete={() => handleDelete(e._id!)} /></td>
                 </tr>
@@ -144,16 +156,18 @@ function ExemplarForm({ initial, onSubmit, onCancel }: { initial?: Exemplar; onS
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Produto <span className="text-red-500">*</span></label>
-        <select value={idProd} onChange={(e) => setId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-          <option value="">Selecione o livro...</option>
-          {listaProdutos.map(p => <option key={p._id} value={p._id}>{p.dscTituloProd}</option>)}
-        </select>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Produto <span className="text-black ml-1">*</span></label>
+        <CustomSelect
+          value={idProd}
+          onChange={setId}
+          options={listaProdutos.map(p => ({ value: p._id!, label: p.dscTituloProd }))}
+          placeholder="Selecione o livro..."
+        />
         <p className="text-xs text-gray-400 mt-1">Selecione o produto ao qual este exemplar pertence.</p>
       </div>
       {!initial && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade <span className="text-black ml-1">*</span></label>
           <input type="number" min="1" max="50" value={quantidade} onChange={(e) => setQuantidade(Number(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
           <p className="text-xs text-gray-400 mt-1">Quantas cópias idênticas deste livro você deseja adicionar ao acervo de uma vez?</p>
         </div>

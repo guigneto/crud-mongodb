@@ -4,14 +4,14 @@ interface Props {
   title: string
   value: number | string
   icon: LucideIcon
-  color: 'warm' | 'blue' | 'green' | 'red'
+  color: 'warm' | 'blue' | 'yellow' | 'red'
   loading?: boolean
 }
 
 const colorMap = {
   warm: { bg: 'bg-warm-50 border-warm-100',   icon: 'bg-warm-100 text-warm-700', value: 'text-warm-700' },
   blue:  { bg: 'bg-blue-50 border-blue-100',     icon: 'bg-blue-100 text-blue-600',   value: 'text-blue-700'  },
-  green: { bg: 'bg-green-50 border-green-100',   icon: 'bg-green-100 text-green-600', value: 'text-green-700' },
+  yellow: { bg: 'bg-yellow-50 border-yellow-100',   icon: 'bg-yellow-100 text-yellow-600', value: 'text-yellow-700' },
   red:   { bg: 'bg-red-50 border-red-100',       icon: 'bg-red-100 text-red-600',     value: 'text-red-700'   },
 }
 

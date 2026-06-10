@@ -21,6 +21,15 @@ export const getAssociadoById = async (req, res) => {
 
 export const createAssociado = async (req, res) => {
   try {
+    const ultimoAssoc = await Associado.findOne().sort({ createdAt: -1 });
+    let nextNum = 1;
+    if (ultimoAssoc && ultimoAssoc.codAssoc) {
+      const match = ultimoAssoc.codAssoc.match(/AS-(\d+)/);
+      if (match) {
+        nextNum = parseInt(match[1]) + 1;
+      }
+    }
+    req.body.codAssoc = `AS-${String(nextNum).padStart(4, '0')}`;
     const associado = await Associado.create(req.body);
     res.status(201).json(associado);
   } catch (error) {

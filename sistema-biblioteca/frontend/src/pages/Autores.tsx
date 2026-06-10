@@ -59,15 +59,19 @@ export default function Autores() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Autores</h1>
-          <p className="text-gray-500 mt-1">{data.length} cadastrado(s)</p>
+          <p className="text-sm text-gray-500 mt-1">Catálogo de autores registrados no sistema</p>
         </div>
-        <button onClick={openNew} className={btn}><PenLine size={16} /> Novo Autor</button>
+        <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <PenLine size={16} /> Novo Autor
+        </button>
       </div>
 
-      <div className="mb-4 max-w-xs"><SearchBar placeholder="Buscar por nome ou nacionalidade…" onSearch={setQuery} /></div>
+      <div className="mb-6 w-full">
+        <SearchBar placeholder="Buscar por nome ou nacionalidade…" onSearch={setQuery} />
+      </div>
 
       {loading ? <Skeleton /> : !filtered.length ? <Empty /> : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -137,7 +141,7 @@ function AutorForm({ initial, onSubmit, onCancel }: { initial?: Autor; onSubmit:
 }
 
 function F({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return <div><label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>{children}</div>
+  return <div><label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-black ml-1">*</span>}</label>{children}</div>
 }
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return <th className={`px-4 py-3 font-medium${right ? ' text-right' : ''}`}>{children}</th>
@@ -148,4 +152,4 @@ function Empty() { return <p className="text-center text-gray-400 py-16">Nenhum 
 const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
 const inp    = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'
-const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-55 transition-colors'

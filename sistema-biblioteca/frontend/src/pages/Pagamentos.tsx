@@ -3,6 +3,7 @@ import { CreditCard } from 'lucide-react'
 import Modal from '../components/Modal'
 import TableActions from '../components/TableActions'
 import SearchBar from '../components/SearchBar'
+import CustomSelect from '../components/CustomSelect'
 import { type Pagamento, type FormaPagto, getPagamentos, createPagamento, updatePagamento, deletePagamento } from '../services/pagamentos.service'
 
 const FORMAS: FormaPagto[] = ['dinheiro', 'cartao_credito', 'cartao_debito', 'picpay', 'pix']
@@ -12,7 +13,7 @@ const formaLabel: Record<FormaPagto, string> = {
 }
 const formaBadge: Record<FormaPagto, string> = {
   dinheiro: 'bg-green-100 text-green-700', cartao_credito: 'bg-blue-100 text-blue-700',
-  cartao_debito: 'bg-indigo-100 text-indigo-700', picpay: 'bg-orange-100 text-orange-700', pix: 'bg-teal-100 text-teal-700',
+  cartao_debito: 'bg-indigo-100 text-indigo-700', picpay: 'bg-blue-100 text-blue-700', pix: 'bg-teal-100 text-teal-700',
 }
 
 type Form = { idMult: string; valPagto: string; dscFormPagto: FormaPagto; valDescPagto: string }
@@ -70,15 +71,21 @@ export default function Pagamentos() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pagamentos</h1>
-          <p className="text-gray-500 mt-1">{data.length} registro(s) — total pago: <span className="text-green-600 font-medium">R$ {totalPago.toFixed(2)}</span></p>
+          <p className="text-sm text-gray-500 mt-1">
+            Gestão de pagamentos — total pago: <span className="text-green-600 font-medium">R$ {totalPago.toFixed(2)}</span>
+          </p>
         </div>
-        <button onClick={openNew} className={btn}><CreditCard size={16} /> Novo Pagamento</button>
+        <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <CreditCard size={16} /> Novo Pagamento
+        </button>
       </div>
 
-      <div className="mb-4 max-w-xs"><SearchBar placeholder="Buscar por ID da multa…" onSearch={setQuery} /></div>
+      <div className="mb-6 w-full">
+        <SearchBar placeholder="Buscar por ID da multa…" onSearch={setQuery} />
+      </div>
 
       {loading ? <Skeleton /> : !filtered.length ? <p className="text-center text-gray-400 py-16">Nenhum pagamento registrado.</p> : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -144,9 +151,12 @@ function PagamentoForm({ initial, onSubmit, onCancel }: { initial?: Pagamento; o
     <form onSubmit={submit} className="space-y-4">
       <F label="ID da Multa" required><input type="number" min="1" value={form.idMult} onChange={s('idMult')} className={inp} /></F>
       <F label="Forma de Pagamento" required>
-        <select value={form.dscFormPagto} onChange={s('dscFormPagto')} className={sel}>
-          {FORMAS.map((f) => <option key={f} value={f}>{formaLabel[f]}</option>)}
-        </select>
+        <CustomSelect
+          value={form.dscFormPagto}
+          onChange={(val) => setForm(f => ({ ...f, dscFormPagto: val as FormaPagto }))}
+          options={FORMAS.map((f) => ({ value: f, label: formaLabel[f] }))}
+          placeholder="Selecione a forma de pagamento..."
+        />
       </F>
       <div className="grid grid-cols-2 gap-4">
         <F label="Valor Pago (R$)" required><input type="number" min="0" step="0.01" value={form.valPagto} onChange={s('valPagto')} className={inp} /></F>
@@ -161,9 +171,12 @@ function PagamentoForm({ initial, onSubmit, onCancel }: { initial?: Pagamento; o
   )
 }
 
+
+
 function F({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return <div><label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>{children}</div>
+  return <div><label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-black ml-1">*</span>}</label>{children}</div>
 }
+
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return <th className={`px-4 py-3 font-medium${right ? ' text-right' : ''}`}>{children}</th>
 }
@@ -171,6 +184,5 @@ function Skeleton() { return <div className="space-y-3">{Array.from({ length: 4 
 
 const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
 const inp    = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-const sel    = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'
 const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'

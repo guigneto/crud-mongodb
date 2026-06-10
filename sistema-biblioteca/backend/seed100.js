@@ -52,8 +52,17 @@ const editorasRaw = [
 
 const associadosRaw = Array.from({ length: 30 }, (_, i) => ({
     nomAssoc: `Associado Fictício ${i+1}`,
+    email: `associado${i+1}@example.com`,
+    telefone: `119${String(i).padStart(8, '0')}`,
     indSexoAssoc: i % 2 === 0 ? 'M' : 'F',
-    dscEnderecoAssoc: `Rua das Flores, ${i*10 + 1}`,
+    endereco: {
+        numCEPEnder: `01001-${String(i).padStart(3, '0')}`,
+        dscNomeLogradouroEnder: 'Rua das Flores',
+        numNumeroEnder: i*10 + 1,
+        dscBairroEnder: 'Centro',
+        dscCidadeEnder: 'São Paulo',
+        dscUFEnder: 'SP'
+    },
     dscTipoAssoc: i % 5 === 0 ? 'vip' : 'comum'
 }));
 

@@ -1,11 +1,25 @@
 import api from './api';
 
+export interface Endereco {
+  numCEPEnder?: string;
+  dscNomeLogradouroEnder: string;
+  numNumeroEnder: number | '';
+  dscComplementoEnder?: string;
+  dscBairroEnder: string;
+  dscCidadeEnder: string;
+  dscUFEnder: string;
+}
+
 export interface Associado {
   _id?: string;
+  codAssoc?: string;
   nomAssoc: string;
+  email?: string;
+  telefone?: string;
   indSexoAssoc: 'M' | 'F';
-  dscEnderecoAssoc: string;
+  endereco: Endereco;
   dscTipoAssoc: 'comum' | 'vip';
+  createdAt?: string;
 }
 
 export const getAssociados  = ()                              => api.get<Associado[]>('/associados');

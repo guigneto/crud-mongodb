@@ -5,6 +5,16 @@ const exemplarSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Produto é obrigatório'],
     },
+    codExemplar: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    estado: {
+        type: String,
+        enum: ['Excelente', 'Bom', 'Danificado', 'Perdido'],
+        default: 'Excelente'
+    }
 }, { timestamps: true });
 
 const Exemplar = mongoose.model('Exemplar', exemplarSchema);

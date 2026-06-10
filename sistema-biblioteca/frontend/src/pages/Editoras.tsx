@@ -56,15 +56,19 @@ export default function Editoras() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Editoras</h1>
-          <p className="text-gray-500 mt-1">{data.length} cadastrada(s)</p>
+          <p className="text-sm text-gray-500 mt-1">Gerencie as editoras parceiras</p>
         </div>
-        <button onClick={openNew} className={btn}><Building2 size={16} /> Nova Editora</button>
+        <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <Building2 size={16} /> Nova Editora
+        </button>
       </div>
 
-      <div className="mb-4 max-w-xs"><SearchBar placeholder="Buscar por nome…" onSearch={setQuery} /></div>
+      <div className="mb-6 w-full">
+        <SearchBar placeholder="Buscar por nome…" onSearch={setQuery} />
+      </div>
 
       {loading ? <Skeleton /> : !filtered.length ? <p className="text-center text-gray-400 py-16">Nenhuma editora cadastrada.</p> : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -117,7 +121,7 @@ function EditoraForm({ initial, onSubmit, onCancel }: { initial?: Editora; onSub
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nome / Descrição <span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Nome / Descrição <span className="text-black ml-1">*</span></label>
         <input value={dscEditora} onChange={(e) => setDsc(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
@@ -133,4 +137,4 @@ function Skeleton() { return <div className="space-y-3">{Array.from({ length: 4 
 
 const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'
-const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-55 transition-colors'
