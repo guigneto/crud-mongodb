@@ -19,8 +19,25 @@ export const getEmprestimoById = async (req, res) => {
   }
 };
 
+const MAX_EMPRESTIMOS_ATIVOS = 3;
+
 export const createEmprestimo = async (req, res) => {
   try {
+    const { idAssoc } = req.body;
+
+    if (idAssoc) {
+      const ativos = await Emprestimo.countDocuments({
+        idAssoc,
+        datEfetEntrEmpr: null,
+      });
+
+      if (ativos >= MAX_EMPRESTIMOS_ATIVOS) {
+        return res.status(400).json({
+          error: `Este associado já possui o máximo de ${MAX_EMPRESTIMOS_ATIVOS} empréstimos ativos. Não é possível criar um novo empréstimo.`,
+        });
+      }
+    }
+
     const emprestimo = await Emprestimo.create(req.body);
     res.status(201).json(emprestimo);
   } catch (error) {
