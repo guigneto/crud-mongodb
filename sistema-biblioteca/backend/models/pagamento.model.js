@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const pagamentoSchema = new mongoose.Schema({
     idMult: {
-        type: Number,
+        type: String,
         required: [true, 'Multa é obrigatória'],
     },
     valPagto: {

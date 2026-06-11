@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const multaSchema = new mongoose.Schema({
     idEmpr: {
-        type: Number,
+        type: String,
         required: [true, 'Empréstimo é obrigatório'],
     },
     dscTipMult: {

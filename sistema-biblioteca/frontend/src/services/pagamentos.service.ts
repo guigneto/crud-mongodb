@@ -4,7 +4,7 @@ export type FormaPagto = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'picp
 
 export interface Pagamento {
   _id?: string;
-  idMult: number;
+  idMult: string;
   valPagto: number;
   dscFormPagto: FormaPagto;
   valDescPagto: number;

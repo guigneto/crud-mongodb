@@ -2,7 +2,7 @@ import api from './api';
 
 export interface Multa {
   _id?: string;
-  idEmpr: number;
+  idEmpr: string;
   dscTipMult: 'atraso' | 'dano_perda';
   valMult: number;
 }

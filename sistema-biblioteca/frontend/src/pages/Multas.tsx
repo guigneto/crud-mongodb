@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
-import { AlertCircle, CreditCard, Filter as FilterIcon } from 'lucide-react'
+import { PlusCircle, CreditCard } from 'lucide-react'
 import Modal from '../components/Modal'
 import TableActions from '../components/TableActions'
 import SearchBar from '../components/SearchBar'
 import CustomSelect from '../components/CustomSelect'
 import { type Multa, getMultas, createMulta, updateMulta, deleteMulta } from '../services/multas.service'
 import { type Pagamento, type FormaPagto, getPagamentos, createPagamento } from '../services/pagamentos.service'
+import { type Emprestimo, getEmprestimos } from '../services/emprestimos.service'
+import { type Exemplar, getExemplares } from '../services/exemplares.service'
+import { type Produto, getProdutos } from '../services/produtos.service'
+import { type Associado, getAssociados } from '../services/associados.service'
+
+const MS_POR_DIA = 1000 * 60 * 60 * 24
+const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString('pt-BR') : '—')
+
+// Resultado do cálculo da multa por atraso
+export type CalcAtraso = { diasAtraso: number; valorDiaria: number; valMult: number }
 
 const TIPOS = ['atraso', 'dano_perda'] as const
 const tipoLabel = { atraso: 'Atraso', dano_perda: 'Dano / Perda' }
@@ -32,6 +42,10 @@ type StatusFilter = 'todos' | 'pendente' | 'paga'
 export default function Multas() {
   const [multas, setMultas]       = useState<Multa[]>([])
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([])
+  const [emprestimos, setEmprestimos] = useState<Emprestimo[]>([])
+  const [exemplares, setExemplares] = useState<Exemplar[]>([])
+  const [produtos, setProdutos]   = useState<Produto[]>([])
+  const [associados, setAssociados] = useState<Associado[]>([])
   const [loading, setLoading]     = useState(true)
   const [openMulta, setOpenMulta] = useState(false)
   const [editing, setEditing]     = useState<Multa | undefined>()
@@ -45,15 +59,78 @@ export default function Multas() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [rM, rP] = await Promise.all([getMultas(), getPagamentos()])
+      const [rM, rP, rE, rEx, rPr, rA] = await Promise.all([
+        getMultas(),
+        getPagamentos(),
+        getEmprestimos().catch(() => ({ data: [] })),
+        getExemplares().catch(() => ({ data: [] })),
+        getProdutos().catch(() => ({ data: [] })),
+        getAssociados().catch(() => ({ data: [] })),
+      ])
       setMultas(rM.data)
       setPagamentos(rP.data)
+      setEmprestimos(rE.data)
+      setExemplares(rEx.data)
+      setProdutos(rPr.data)
+      setAssociados(rA.data)
     }
     catch { setMultas([]); setPagamentos([]) }
     finally { setLoading(false) }
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Mapas auxiliares para rótulos e cálculo da multa por atraso
+  const exemplarToProd = useMemo(() => {
+    const m: Record<string, string> = {}
+    exemplares.forEach((e) => { if (e._id) m[e._id] = e.idProd })
+    return m
+  }, [exemplares])
+
+  const produtoMap = useMemo(() => {
+    const m: Record<string, Produto> = {}
+    produtos.forEach((p) => { if (p._id) m[p._id] = p })
+    return m
+  }, [produtos])
+
+  const assocMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    associados.forEach((a) => { if (a._id) m[a._id] = a.nomAssoc })
+    return m
+  }, [associados])
+
+  const emprestimoLabel = useCallback((idEmpr: string) => {
+    const e = emprestimos.find((x) => x._id === idEmpr)
+    if (!e) return `Empréstimo #${String(idEmpr).slice(-6)}`
+    const titulo = produtoMap[exemplarToProd[e.idExemplar]]?.dscTituloProd
+    const assoc = assocMap[e.idAssoc]
+    const partes = [`#${e._id!.slice(-6)}`]
+    if (titulo) partes.push(titulo)
+    if (assoc) partes.push(assoc)
+    partes.push(`venc. ${fmtDate(e.datPrevEntrEmpr)}`)
+    return partes.join(' · ')
+  }, [emprestimos, produtoMap, exemplarToProd, assocMap])
+
+  // Dados do empréstimo separados (para colunas e busca)
+  const emprestimoInfo = useCallback((idEmpr: string) => {
+    const e = emprestimos.find((x) => x._id === idEmpr)
+    return {
+      idCurto: `#${String(idEmpr).slice(-6)}`,
+      assoc: (e && assocMap[e.idAssoc]) || '—',
+      titulo: (e && produtoMap[exemplarToProd[e.idExemplar]]?.dscTituloProd) || '—',
+      prevista: e ? fmtDate(e.datPrevEntrEmpr) : '—',
+    }
+  }, [emprestimos, produtoMap, exemplarToProd, assocMap])
+
+  const calcAtraso = useCallback((idEmpr: string): CalcAtraso => {
+    const e = emprestimos.find((x) => x._id === idEmpr)
+    if (!e) return { diasAtraso: 0, valorDiaria: 0, valMult: 0 }
+    const valorDiaria = produtoMap[exemplarToProd[e.idExemplar]]?.valMultaDiarProd ?? 0
+    const prevista = new Date(e.datPrevEntrEmpr)
+    const entrega = e.datEfetEntrEmpr ? new Date(e.datEfetEntrEmpr) : new Date()
+    const diasAtraso = Math.max(0, Math.ceil((entrega.getTime() - prevista.getTime()) / MS_POR_DIA))
+    return { diasAtraso, valorDiaria, valMult: diasAtraso * valorDiaria }
+  }, [emprestimos, produtoMap, exemplarToProd])
 
   const pagtoByMulta = useMemo(() => {
     const map: Record<string, Pagamento> = {}
@@ -68,13 +145,17 @@ export default function Multas() {
   const filtered = useMemo(() => {
     let result = multas
     if (query) {
-      result = result.filter((m) => String(m.idEmpr).includes(query))
+      const q = query.toLowerCase()
+      result = result.filter((m) => {
+        const info = emprestimoInfo(m.idEmpr)
+        return `${info.assoc} ${info.titulo}`.toLowerCase().includes(q)
+      })
     }
     if (statusFilter !== 'todos') {
       result = result.filter((m) => getStatus(m) === statusFilter)
     }
     return result
-  }, [multas, query, statusFilter, pagtoByMulta])
+  }, [multas, query, statusFilter, pagtoByMulta, emprestimoInfo])
 
   useEffect(() => { setPage(1) }, [query, statusFilter])
 
@@ -101,7 +182,9 @@ export default function Multas() {
   }
 
   async function handleSubmitMulta(form: MultaForm) {
-    const payload = { idEmpr: Number(form.idEmpr), dscTipMult: form.dscTipMult, valMult: Number(form.valMult) }
+    // Para multa por atraso, o valor é calculado automaticamente (frontend exibe, backend confirma).
+    const valMult = form.dscTipMult === 'atraso' && form.idEmpr ? calcAtraso(form.idEmpr).valMult : Number(form.valMult)
+    const payload = { idEmpr: form.idEmpr, dscTipMult: form.dscTipMult, valMult }
     if (editing) await updateMulta(editing._id!, payload)
     else await createMulta(payload)
     closeMulta(); load()
@@ -109,7 +192,7 @@ export default function Multas() {
 
   async function handleSubmitPagto(form: PagtoForm) {
     if (!payingMulta) return
-    const payload = { idMult: Number(payingMulta._id), valPagto: Number(form.valPagto), dscFormPagto: form.dscFormPagto, valDescPagto: Number(form.valDescPagto) }
+    const payload = { idMult: payingMulta._id!, valPagto: Number(form.valPagto), dscFormPagto: form.dscFormPagto, valDescPagto: Number(form.valDescPagto) }
     await createPagamento(payload)
     closePagto(); load()
   }
@@ -125,13 +208,13 @@ export default function Multas() {
           </p>
         </div>
         <button onClick={openNewMulta} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <AlertCircle size={16} /> Nova Multa
+          <PlusCircle size={16} /> Nova Multa
         </button>
       </div>
 
       <div className="mb-6 flex flex-col lg:flex-row gap-4 items-center">
         <div className="flex-1 w-full">
-          <SearchBar placeholder="Buscar por ID de empréstimo…" onSearch={setQuery} />
+          <SearchBar placeholder="Buscar por associado ou livro…" onSearch={setQuery} />
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap lg:flex-nowrap w-full lg:w-auto">
           <div className="w-full sm:w-48">
@@ -153,14 +236,17 @@ export default function Multas() {
       {loading ? <Skeleton /> : !filtered.length ? <p className="text-center text-gray-400 py-16">Nenhuma multa encontrada.</p> : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
           <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50 text-gray-600 text-left"><Th>ID Empréstimo</Th><Th>Tipo</Th><Th>Valor</Th><Th>Status</Th><Th>Pagamento</Th><Th right>Ações</Th></tr></thead>
+            <thead><tr className="bg-gray-50 text-gray-600 text-left"><Th>Associado</Th><Th>Livro</Th><Th>Venc.</Th><Th>Tipo</Th><Th>Valor</Th><Th>Status</Th><Th>Pagamento</Th><Th right>Ações</Th></tr></thead>
             <tbody>
               {paginated.map((m) => {
                 const status = getStatus(m)
                 const pagto = pagtoByMulta[String(m._id)]
+                const info = emprestimoInfo(m.idEmpr)
                 return (
                   <tr key={m._id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{m.idEmpr}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{info.assoc}</td>
+                    <td className="px-4 py-3 text-gray-600">{info.titulo}</td>
+                    <td className="px-4 py-3 text-gray-600">{info.prevista}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tipoBadge[m.dscTipMult]}`}>{tipoLabel[m.dscTipMult]}</span>
                     </td>
@@ -210,7 +296,14 @@ export default function Multas() {
 
       {/* Modal Nova/Editar Multa */}
       <Modal open={openMulta} onClose={closeMulta} title={editing ? 'Editar Multa' : 'Nova Multa'}>
-        <MultaFormComponent initial={editing} onSubmit={handleSubmitMulta} onCancel={closeMulta} />
+        <MultaFormComponent
+          initial={editing}
+          onSubmit={handleSubmitMulta}
+          onCancel={closeMulta}
+          emprestimos={emprestimos}
+          emprestimoLabel={emprestimoLabel}
+          calcAtraso={calcAtraso}
+        />
       </Modal>
 
       {/* Modal Registrar Pagamento */}
@@ -220,7 +313,7 @@ export default function Multas() {
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-500">Pagamento referente à multa:</p>
               <p className="text-sm font-bold text-gray-900 mt-1">
-                Empréstimo #{payingMulta.idEmpr} · <span className={`${tipoBadge[payingMulta.dscTipMult]} px-2 py-0.5 rounded-full text-xs font-medium`}>{tipoLabel[payingMulta.dscTipMult]}</span> · <span className="text-red-600">R$ {payingMulta.valMult.toFixed(2)}</span>
+                {emprestimoLabel(payingMulta.idEmpr)} · <span className={`${tipoBadge[payingMulta.dscTipMult]} px-2 py-0.5 rounded-full text-xs font-medium`}>{tipoLabel[payingMulta.dscTipMult]}</span> · <span className="text-red-600">R$ {payingMulta.valMult.toFixed(2)}</span>
               </p>
             </div>
             <PagamentoFormComponent valorMulta={payingMulta.valMult} onSubmit={handleSubmitPagto} onCancel={closePagto} />
@@ -232,7 +325,14 @@ export default function Multas() {
 }
 
 /* ── Multa Form ────────────────────────────────────────────────────── */
-function MultaFormComponent({ initial, onSubmit, onCancel }: { initial?: Multa; onSubmit: (f: MultaForm) => Promise<void>; onCancel: () => void }) {
+function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, emprestimoLabel, calcAtraso }: {
+  initial?: Multa
+  onSubmit: (f: MultaForm) => Promise<void>
+  onCancel: () => void
+  emprestimos: Emprestimo[]
+  emprestimoLabel: (idEmpr: string) => string
+  calcAtraso: (idEmpr: string) => CalcAtraso
+}) {
   const [form, setForm] = useState<MultaForm>(initial
     ? { idEmpr: String(initial.idEmpr), dscTipMult: initial.dscTipMult, valMult: String(initial.valMult) }
     : emptyMulta)
@@ -244,9 +344,12 @@ function MultaFormComponent({ initial, onSubmit, onCancel }: { initial?: Multa; 
     setError('')
   }, [initial])
 
+  const isAtraso = form.dscTipMult === 'atraso'
+  const calc = isAtraso && form.idEmpr ? calcAtraso(form.idEmpr) : null
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.idEmpr) { setError('ID do empréstimo é obrigatório.'); return }
+    if (!form.idEmpr) { setError('Selecione o empréstimo.'); return }
     setSaving(true); setError('')
     try { await onSubmit(form) } catch { setError('Erro ao salvar.') } finally { setSaving(false) }
   }
@@ -255,7 +358,16 @@ function MultaFormComponent({ initial, onSubmit, onCancel }: { initial?: Multa; 
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <F label="ID do Empréstimo" required><input type="number" min="1" value={form.idEmpr} onChange={s('idEmpr')} className={inp} /></F>
+      <F label="Empréstimo" required>
+        <CustomSelect
+          value={form.idEmpr}
+          onChange={(val) => setForm(f => ({ ...f, idEmpr: val }))}
+          options={emprestimos.map((e) => ({ value: e._id!, label: emprestimoLabel(e._id!) }))}
+          placeholder="Selecione o empréstimo..."
+          searchable
+          searchPlaceholder="Buscar por livro, associado ou ID..."
+        />
+      </F>
       <div className="grid grid-cols-2 gap-4">
         <F label="Tipo de Multa" required>
           <CustomSelect
@@ -265,8 +377,38 @@ function MultaFormComponent({ initial, onSubmit, onCancel }: { initial?: Multa; 
             placeholder="Selecione o tipo..."
           />
         </F>
-        <F label="Valor (R$)" required><input type="number" min="0" step="0.01" value={form.valMult} onChange={s('valMult')} className={inp} /></F>
+        <F label="Valor" required>
+          {isAtraso ? (
+            <div className={`${inpWrap} bg-gray-50`}>
+              <span className="text-gray-500 select-none">R$</span>
+              <span className="font-medium text-gray-900">{(calc?.valMult ?? 0).toFixed(2)}</span>
+            </div>
+          ) : (
+            <div className={inpWrap}>
+              <span className="text-gray-500 select-none">R$</span>
+              <input
+                type="number" min="0" step="0.01" value={form.valMult}
+                onChange={s('valMult')}
+                onBlur={() => setForm(f => ({ ...f, valMult: f.valMult === '' ? '' : Number(f.valMult).toFixed(2) }))}
+                className="w-full bg-transparent focus:outline-none text-gray-900"
+              />
+            </div>
+          )}
+        </F>
       </div>
+
+      {isAtraso && (
+        <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+          {!form.idEmpr ? (
+            'Selecione o empréstimo para calcular a multa por atraso automaticamente.'
+          ) : calc && calc.diasAtraso > 0 ? (
+            <>Cálculo automático: <span className="font-semibold">{calc.diasAtraso} dia(s)</span> de atraso × <span className="font-semibold">R$ {calc.valorDiaria.toFixed(2)}/dia</span> = <span className="font-semibold">R$ {calc.valMult.toFixed(2)}</span>.</>
+          ) : (
+            'Este empréstimo não está em atraso — o valor calculado é R$ 0,00.'
+          )}
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-500">{error}</p>}
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className={btnSec}>Cancelar</button>
@@ -324,5 +466,6 @@ function Skeleton() { return <div className="space-y-3">{Array.from({ length: 4 
 
 const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
 const inp    = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+const inpWrap = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm flex items-center gap-1.5 focus-within:ring-2 focus-within:ring-blue-500'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'
 const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
