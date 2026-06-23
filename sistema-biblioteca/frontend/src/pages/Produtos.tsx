@@ -177,10 +177,10 @@ export default function Produtos() {
           return disponibilidadeFilter === 'disponivel';
         }
         const pEx = exemplares.filter(ex => ex.idProd === p._id && ex.estado !== 'Vendido');
-        const available = total - activeLoans.length;
+        const available = pEx.filter(exemplar => exemplar.dscStatusExemplar === 'Disponível').length;
 
         if (disponibilidadeFilter === 'disponivel') {
-          return total > 0 && available > 0;
+          return available > 0;
         }
         if (disponibilidadeFilter === 'indisponivel') {
           return available === 0;
@@ -212,14 +212,13 @@ export default function Produtos() {
           } else {
             const pEx = exemplares.filter(ex => ex.idProd === p._id && ex.dscStatusExemplar !== 'Vendido')
             const total = pEx.length
-            const activeLoans = emprestimos.filter(em => 
-              em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
-              pEx.some(ex => ex._id === em.idExemplar)
-            )
-            const available = total - activeLoans.length
+            // const activeLoans = emprestimos.filter(em => 
+            //   em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
+            //   pEx.some(ex => ex._id === em.idExemplar)
+            // )
+            const available = pEx.filter(exemplar => exemplar.dscStatusExemplar === 'Disponível').length;
             if (total === 0) dispText = 'sem exemplares';
             else if (available > 0) dispText = 'disponível';
-            else dispText = 'emprestado';
           }
           dispText = normalizeStr(dispText);
 
@@ -413,11 +412,11 @@ export default function Produtos() {
                       }
                       const pEx = exemplares.filter(ex => ex.idProd === p._id)
                       const total = pEx.length
-                      const activeLoans = emprestimos.filter(em => 
-                        em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
-                        pEx.some(ex => ex._id === em.idExemplar)
-                      )
-                      const available = total - activeLoans.length
+                      // const activeLoans = emprestimos.filter(em => 
+                      //   em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
+                      //   pEx.some(ex => ex._id === em.idExemplar)
+                      // )
+                      const available = pEx.filter(exemplar => exemplar.dscStatusExemplar === 'Disponível').length;
                       if (total === 0) {
                         return (
                           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
@@ -434,9 +433,9 @@ export default function Produtos() {
                         )
                       }
                       return (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                          Emprestado ({total}/{total})
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                          Disponível ({available}/{total})
                         </span>
                       )
                     })()}
@@ -612,7 +611,7 @@ export default function Produtos() {
                                 <td className="px-4 py-2.5">
                                   <span className={`inline-block w-20 text-center py-0.5 rounded-full text-[10px] font-semibold border ${
                                     ex.dscStatusExemplar === 'Vendido' ? 'bg-gray-100 text-gray-500 border-gray-200' :
-                                    ex.dscStatusExemplar === 'Emprestado' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                    ex.dscStatusExemplar === 'Emprestado' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                                     'bg-emerald-50 text-emerald-700 border-emerald-200'
                                   }`}>
                                     {ex.dscStatusExemplar || 'Disponível'}

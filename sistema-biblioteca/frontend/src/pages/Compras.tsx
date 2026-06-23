@@ -1,5 +1,6 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
-import { CreditCard, Search, BookOpen, X, CheckCircle2 } from 'lucide-react'
+import CustomSelect from '../components/CustomSelect'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CreditCard } from 'lucide-react'
 import Modal from '../components/Modal'
 import SearchBar from '../components/SearchBar'
 import { getExemplares, purchaseExemplar, type Exemplar } from '../services/exemplares.service'
@@ -20,7 +21,6 @@ export default function Compras() {
   const [selectedAssoc, setSelectedAssoc] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<FormaPagto>('pix')
   const [discountValue, setDiscountValue] = useState('0')
-  const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -200,69 +200,97 @@ export default function Compras() {
         </div>
       )}
 
-      <Modal open={purchaseOpen} onClose={() => setPurchaseOpen(false)} title="Confirmar Compra" maxWidth="max-w-md">
-        <div className="space-y-4">
+      <Modal
+        open={purchaseOpen}
+        onClose={() => setPurchaseOpen(false)}
+        title="Confirmar Compra"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-6">
           <p className="text-sm text-gray-600">Deseja marcar este exemplar como vendido? Ele ficará indisponível para empréstimos.</p>
           {selected && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-              <div>
-                <div className="text-sm text-gray-500">Exemplar</div>
-                <div className="font-medium text-gray-900">{selected.codExemplar || selected._id}</div>
+            <>
+              {/* Detalhes do Exemplar */}
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+                <div>
+                  <div className="text-sm text-gray-500">Exemplar</div>
+                  <div className="font-medium text-gray-900">{selected.codExemplar || selected._id}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Produto</div>
+                  <div className="font-medium text-gray-900">{produtos[selected.idProd]?.dscTituloProd || 'Desconhecido'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Preço</div>
+                  <div className="font-medium text-gray-900">R$ {(produtos[selected.idProd]?.valPrecoProd ?? 0).toFixed(2)}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-500">Produto</div>
-                <div className="font-medium text-gray-900">{produtos[selected.idProd]?.dscTituloProd || 'Desconhecido'}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-500">Preço</div>
-                <div className="font-medium text-gray-900">R$ {(produtos[selected.idProd]?.valPrecoProd ?? 0).toFixed(2)}</div>
-              </div>
-              <div>
+
+              {/* Associado */}
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">Associado responsável</label>
-                <select
+                <CustomSelect
                   value={selectedAssoc}
-                  onChange={(e) => setSelectedAssoc(e.target.value)}
-                  className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">Selecionar associado</option>
-                  {associados.map((assoc) => (
-                    <option key={assoc._id} value={assoc._id}>{assoc.nomAssoc} ({assoc.codAssoc || assoc._id})</option>
-                  ))}
-                </select>
+                  onChange={(value) => setSelectedAssoc(value)}
+                  options={associados.map((assoc) => ({
+                    value: assoc._id || '',
+                    label: `${assoc.nomAssoc} (${assoc.codAssoc || assoc._id})`
+                  }))}
+                  placeholder="Selecione um associado"
+                  searchable
+                  className="w-full"
+                />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Forma de pagamento</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as FormaPagto)}
-                    className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="pix">PIX</option>
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="cartao_credito">Cartão de crédito</option>
-                    <option value="cartao_debito">Cartão de débito</option>
-                    <option value="picpay">PicPay</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Desconto (R$)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
+
+              {/* Forma de Pagamento */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">Forma de pagamento</label>
+                <CustomSelect
+                  value={paymentMethod}
+                  onChange={(value) => {
+                    const method = value as FormaPagto
+                    setPaymentMethod(method)
+                    if (method === 'dinheiro') {
+                      const discount = ((produtos[selected?.idProd ?? '']?.valPrecoProd ?? 0) * 0.1)
+                      setDiscountValue(discount.toFixed(2))
+                    } else {
+                      setDiscountValue('0')
+                    }
+                  }}
+                  options={[
+                    { value: 'pix', label: 'PIX' },
+                    { value: 'dinheiro', label: 'Dinheiro' },
+                    { value: 'cartao_credito', label: 'Cartão de crédito' },
+                    { value: 'cartao_debito', label: 'Cartão de débito' },
+                    { value: 'picpay', label: 'PicPay' },
+                  ]}
+                  placeholder="Selecione a forma de pagamento"
+                  className="w-full"
+                />
               </div>
-            </div>
+
+              {/* Desconto - Apenas para Dinheiro */}
+              {paymentMethod === 'dinheiro' && (
+                <div className="space-y-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <label className="block text-sm font-medium text-gray-700">Desconto (10% automático)</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">R$</span>
+                    <input
+                      type="number"
+                      readOnly
+                      value={Number(discountValue).toFixed(2)}
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
+                    />
+                  </div>
+                  <p className="text-xs text-amber-700">O desconto de 10% é aplicado automaticamente ao pagar em dinheiro.</p>
+                </div>
+              )}
+            </>
           )}
           {actionError && <p className="text-sm text-red-500">{actionError}</p>}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <button onClick={() => setPurchaseOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
-            <button onClick={confirmPurchase} disabled={saving} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">{saving ? 'Processando…' : 'Confirmar Compra'}</button>
+          <div className="flex justify-between gap-3 pt-4 border-t border-gray-100">
+            <button onClick={() => setPurchaseOpen(false)} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
+            <button onClick={confirmPurchase} disabled={saving} className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">{saving ? 'Processando…' : 'Confirmar Compra'}</button>
           </div>
         </div>
       </Modal>
