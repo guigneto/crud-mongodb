@@ -28,11 +28,10 @@ const pagamentoSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
-pagamentoSchema.pre('validate', function (next) {
+pagamentoSchema.pre('validate', function () {
     if (!this.idMult && !this.idExemplar) {
         this.invalidate('idMult', 'Pagamento deve estar associado a uma multa ou compra.');
     }
-    next();
 });
 
 const Pagamento = mongoose.model('Pagamento', pagamentoSchema);
