@@ -26,6 +26,20 @@ export const createEmprestimo = async (req, res) => {
     const associado = await Associado.findById(req.body.idAssoc);
     if (!associado) return res.status(404).json({ error: 'Associado não encontrado' });
 
+    const exemplar = await Exemplar.findById(req.body.idExemplar);
+    if (!exemplar) return res.status(404).json({ error: 'Exemplar não encontrado' });
+    if (exemplar.dscStatusExemplar === 'Vendido') {
+      return res.status(400).json({ error: 'Exemplar já foi vendido e não pode ser emprestado.' });
+    }
+    if (exemplar.dscStatusExemplar === 'Emprestado') {
+      return res.status(400).json({ error: 'Exemplar já está emprestado.' });
+    }
+
+    const existingLoan = await Emprestimo.findOne({ idExemplar: req.body.idExemplar, datEfetEntrEmpr: null, status: { $ne: 'cancelado' } });
+    if (existingLoan) {
+      return res.status(400).json({ error: 'Exemplar já está emprestado.' });
+    }
+
     if (associado.dscTipoAssoc === 'comum') {
       const count = await Emprestimo.countDocuments({ idAssoc: req.body.idAssoc, datEfetEntrEmpr: null, status: 'ativo' });
       if (count >= 3) {
@@ -47,6 +61,7 @@ export const createEmprestimo = async (req, res) => {
     req.body.codEmpr = String(nextNum);
 
     const emprestimo = await Emprestimo.create(req.body);
+    await Exemplar.findByIdAndUpdate(req.body.idExemplar, { dscStatusExemplar: 'Emprestado' });
     res.status(201).json(emprestimo);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -64,7 +79,8 @@ export const updateEmprestimo = async (req, res) => {
     // Atualiza o estado físico do exemplar se ele foi devolvido
     if (req.body.datEfetEntrEmpr && req.body.estadoDevolucao) {
       await Exemplar.findByIdAndUpdate(emprestimo.idExemplar, {
-        estado: req.body.estadoDevolucao
+        estado: req.body.estadoDevolucao,
+        dscStatusExemplar: 'Disponível'
       });
     }
     
@@ -149,6 +165,7 @@ export const cancelarEmprestimo = async (req, res) => {
     emprestimo.status = 'cancelado';
     emprestimo.motivoCancelamento = motivoCancelamento;
     await emprestimo.save();
+    await Exemplar.findByIdAndUpdate(emprestimo.idExemplar, { dscStatusExemplar: 'Disponível' });
 
     res.json(emprestimo);
   } catch (error) {

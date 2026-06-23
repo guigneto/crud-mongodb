@@ -12,6 +12,12 @@ const produtoSchema = new mongoose.Schema({
         minLength: 2,
         maxLength: 150,
     },
+    valPrecoProd: {
+        type: Number,
+        required: [true, 'Preço do produto é obrigatório'],
+        min: [0, 'O preço do produto não pode ser negativo'],
+        default: 0,
+    },
     valMultaDiarProd: {
         type: Number,
         required: [true, 'Valor de multa diária é obrigatório'],

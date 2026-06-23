@@ -9,6 +9,7 @@ import { type Associado, type Endereco, getAssociados, createAssociado, updateAs
 import { getEmprestimos, type Emprestimo } from '../services/emprestimos.service'
 import { getExemplares, type Exemplar } from '../services/exemplares.service'
 import { getProdutos, type Produto } from '../services/produtos.service'
+import { formatDateBR } from '../utils/date'
 
 const SEXO  = { M: 'Masculino', F: 'Feminino' }
 const TIPO  = { comum: 'Comum', vip: 'VIP' }
@@ -272,7 +273,7 @@ export default function Associados() {
                 </div>
                 <div>
                   <span className="block text-gray-500 text-xs mb-1">Cadastro</span>
-                  <span className="font-medium text-gray-900">{viewing.createdAt ? new Date(viewing.createdAt).toLocaleDateString() : 'Não registrado'}</span>
+                  <span className="font-medium text-gray-900">{viewing.createdAt ? formatDateBR(viewing.createdAt) : 'Não registrado'}</span>
                 </div>
               </div>
             </div>
@@ -312,11 +313,11 @@ export default function Associados() {
                                     <div className="text-xs text-gray-400 mt-0.5">ID Exemplar: {ex?.codExemplar || ex?._id || 'N/A'}</div>
                                   </td>
                                   <td className="px-4 py-2.5 text-gray-600">
-                                    {new Date(empr.datRetEmpr).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                    {formatDateBR(empr.datRetEmpr)}
                                   </td>
                                   <td className="px-4 py-2.5">
                                     <span className={`font-medium ${isLate ? 'text-rose-600' : 'text-gray-600'}`}>
-                                      {new Date(empr.datPrevEntrEmpr).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                      {formatDateBR(empr.datPrevEntrEmpr)}
                                     </span>
                                     {isLate && <span className="ml-2 text-[10px] font-bold uppercase text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Atrasado</span>}
                                   </td>
@@ -366,10 +367,10 @@ export default function Associados() {
                                     <div className="text-xs text-gray-400 mt-0.5">ID Exemplar: {ex?.codExemplar || ex?._id || 'N/A'}</div>
                                   </td>
                                   <td className="px-4 py-2.5 text-gray-600">
-                                    {new Date(empr.datRetEmpr).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                    {formatDateBR(empr.datRetEmpr)}
                                   </td>
                                   <td className="px-4 py-2.5 text-gray-600">
-                                    {new Date(empr.datEfetEntrEmpr!).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                    {formatDateBR(empr.datEfetEntrEmpr)}
                                   </td>
                                 </tr>
                               )
@@ -504,7 +505,7 @@ function AssociadoForm({ initial, onSubmit, onCancel }: { initial?: Associado; o
           <F label="E-mail" required>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600" />
-              <input type="email" value={form.email || ''} onChange={s('email')} className={`${inp} pl-9`} placeholder="seu.email@exemplo.com" />
+              <input type="email" value={form.email || ''} onChange={sInp('email')} className={`${inp} pl-9`} placeholder="seu.email@exemplo.com" />
             </div>
           </F>
           <F label="Telefone" required>

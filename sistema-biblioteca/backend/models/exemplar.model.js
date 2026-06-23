@@ -14,7 +14,12 @@ const exemplarSchema = new mongoose.Schema({
         type: String,
         enum: ['Excelente', 'Bom', 'Danificado', 'Perdido'],
         default: 'Excelente'
-    }
+    },
+    dscStatusExemplar: {
+        type: String,
+        enum: ['Disponível', 'Emprestado', 'Vendido'],
+        default: 'Disponível'
+    },
 }, { timestamps: true });
 
 const Exemplar = mongoose.model('Exemplar', exemplarSchema);

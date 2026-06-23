@@ -10,9 +10,11 @@ import { type Emprestimo, getEmprestimos } from '../services/emprestimos.service
 import { type Exemplar, getExemplares } from '../services/exemplares.service'
 import { type Produto, getProdutos } from '../services/produtos.service'
 import { type Associado, getAssociados } from '../services/associados.service'
+import { formatDateBR } from '../utils/date'
 
 const MS_POR_DIA = 1000 * 60 * 60 * 24
-const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString('pt-BR') : '—')
+
+const fmtDate = (d?: string | null) => (d ? formatDateBR(d) : '—')
 
 // Resultado do cálculo da multa por atraso
 export type CalcAtraso = { diasAtraso: number; valorDiaria: number; valMult: number }
@@ -139,7 +141,7 @@ export default function Multas() {
   }, [pagamentos])
 
   const getStatus = (m: Multa): 'pendente' | 'paga' => {
-    return pagtoByMulta[String(m._id)] ? 'paga' : 'pendente'
+    return m.dscStatusMult === 'PAGO' ? 'paga' : 'pendente'
   }
 
   const filtered = useMemo(() => {
@@ -155,7 +157,7 @@ export default function Multas() {
       result = result.filter((m) => getStatus(m) === statusFilter)
     }
     return result
-  }, [multas, query, statusFilter, pagtoByMulta, emprestimoInfo])
+  }, [multas, query, statusFilter, emprestimoInfo])
 
   useEffect(() => { setPage(1) }, [query, statusFilter])
 
@@ -186,7 +188,7 @@ export default function Multas() {
     const valMult = form.dscTipMult === 'atraso' && form.idEmpr ? calcAtraso(form.idEmpr).valMult : Number(form.valMult)
     const payload = { idEmpr: form.idEmpr, dscTipMult: form.dscTipMult, valMult }
     if (editing) await updateMulta(editing._id!, payload)
-    else await createMulta(payload)
+    else await createMulta({ ...payload, dscStatusMult: 'PENDENTE' })
     closeMulta(); load()
   }
 
@@ -464,7 +466,6 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
 }
 function Skeleton() { return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />)}</div> }
 
-const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
 const inp    = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 const inpWrap = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm flex items-center gap-1.5 focus-within:ring-2 focus-within:ring-blue-500'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'

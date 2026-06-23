@@ -7,6 +7,7 @@ export interface Produto {
   _id?: string;
   codProd?: string | null;
   dscTituloProd: string;
+  valPrecoProd: number;
   valMultaDiarProd: number;
   dscTipoProd: 'livro' | 'cd' | 'dvd' | 'revista' | 'jornal' | 'nuvem' | 'mapa' | 'audiobook' | 'software' | 'outro';
   dscFormatoProd?: 'pdf' | 'video' | null;

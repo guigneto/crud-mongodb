@@ -4,6 +4,7 @@ export interface Multa {
   _id?: string;
   idEmpr: string;
   dscTipMult: 'atraso' | 'dano_perda';
+  dscStatusMult: 'PAGO' | 'PENDENTE';
   valMult: number;
 }
 
