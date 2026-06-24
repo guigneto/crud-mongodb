@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   BookOpen, LayoutDashboard, Users, BookMarked,
-  ClipboardList, AlertCircle,
+  ClipboardList, AlertCircle, CreditCard,
   ChevronLeft, ChevronRight, LogOut
 } from 'lucide-react'
 
@@ -9,6 +9,7 @@ const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/associados', icon: Users,    label: 'Associados', end: false },
   { to: '/produtos',   icon: BookMarked, label: 'Produtos',   end: false },
+  { to: '/compras',    icon: CreditCard, label: 'Compras',    end: false },
   { to: '/emprestimos', icon: ClipboardList, label: 'Empréstimos', end: false },
   { to: '/multas',      icon: AlertCircle,   label: 'Multas',      end: false },
 ]

@@ -9,6 +9,7 @@ import { getEmprestimos } from '../services/emprestimos.service'
 import { getExemplares }  from '../services/exemplares.service'
 import { getMultas }      from '../services/multas.service'
 import { getPagamentos }  from '../services/pagamentos.service'
+import { formatDateBR } from '../utils/date'
 
 export default function Home() {
   const [stats, setStats] = useState({ produtos: 0, associados: 0, emprestimosAtivos: 0, multas: 0, assocComum: 0, assocVip: 0, empDevolvidos: 0 })
@@ -114,7 +115,7 @@ export default function Home() {
             id: empr._id,
             associado: assoc ? assoc.nomAssoc : 'Desconhecido',
             produto: prod ? prod.dscTituloProd : 'Desconhecido',
-            dataRet: new Date(empr.datRetEmpr).toLocaleDateString('pt-BR'),
+            dataRet: formatDateBR(empr.datRetEmpr),
             status: st,
             statusColor: stColor
           }

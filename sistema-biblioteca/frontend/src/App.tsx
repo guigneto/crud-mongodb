@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import Home        from './pages/Home'
 import Associados  from './pages/Associados'
 import Produtos    from './pages/Produtos'
+import Compras     from './pages/Compras'
 import Emprestimos from './pages/Emprestimos'
 import Multas      from './pages/Multas'
 import Exemplares  from './pages/Exemplares'
@@ -25,6 +26,7 @@ export default function App() {
                 <Route path="/"            element={<Home />} />
                 <Route path="/associados"  element={<Associados />} />
                 <Route path="/produtos"    element={<Produtos />} />
+                <Route path="/compras"     element={<Compras />} />
                 <Route path="/emprestimos" element={<Emprestimos />} />
                 <Route path="/multas"      element={<Multas />} />
                 <Route path="/exemplares"  element={<Exemplares />} />

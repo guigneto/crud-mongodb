@@ -10,6 +10,12 @@ const multaSchema = new mongoose.Schema({
         required: [true, 'Tipo de multa é obrigatório'],
         enum: ['atraso', 'dano_perda', 'atraso_dano'],
     },
+    dscStatusMult: {
+        type: String,
+        required: [true, 'Status da multa é obrigatório'],
+        enum: ['PAGO', 'PENDENTE'],
+        default: 'PENDENTE',
+    },
     valMult: {
         type: Number,
         required: [true, 'Valor da multa é obrigatório'],

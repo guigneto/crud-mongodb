@@ -1,5 +1,7 @@
 import Exemplar from '../models/exemplar.model.js';
 import Produto from '../models/produto.model.js';
+import Emprestimo from '../models/emprestimo.model.js';
+import Pagamento from '../models/pagamento.model.js';
 
 export const getExemplares = async (req, res) => {
   try {
@@ -58,6 +60,49 @@ export const updateExemplar = async (req, res) => {
     });
     if (!exemplar) return res.status(404).json({ error: 'Exemplar não encontrado' });
     res.json(exemplar);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const purchaseExemplar = async (req, res) => {
+  try {
+    const exemplar = await Exemplar.findById(req.params.id);
+    if (!exemplar) return res.status(404).json({ error: 'Exemplar não encontrado' });
+    if (exemplar.dscStatusExemplar === 'Vendido') {
+      return res.status(400).json({ error: 'Exemplar já foi vendido.' });
+    }
+
+    const emprestimoAtivo = await Emprestimo.findOne({ idExemplar: req.params.id, datEfetEntrEmpr: null, status: { $ne: 'cancelado' } });
+    if (emprestimoAtivo) {
+      return res.status(400).json({ error: 'Exemplar está emprestado e não pode ser vendido.' });
+    }
+
+    const produto = await Produto.findById(exemplar.idProd);
+    if (!produto) return res.status(400).json({ error: 'Produto do exemplar não encontrado.' });
+
+    const { idAssoc, dscFormPagto, valDescPagto = 0 } = req.body;
+    if (!idAssoc) {
+      return res.status(400).json({ error: 'Associado é obrigatório para registrar o pagamento da compra.' });
+    }
+    if (!dscFormPagto) {
+      return res.status(400).json({ error: 'Forma de pagamento é obrigatória.' });
+    }
+
+    const desconto = Number(valDescPagto) || 0;
+    const valor = Math.max(0, produto.valPrecoProd - desconto);
+
+    const atualizado = await Exemplar.findByIdAndUpdate(req.params.id, { dscStatusExemplar: 'Vendido' }, { new: true, runValidators: true });
+
+    await Pagamento.create({
+      idExemplar: atualizado._id,
+      idAssoc,
+      valPagto: valor,
+      dscFormPagto,
+      valDescPagto: desconto,
+    });
+
+    res.json(atualizado);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

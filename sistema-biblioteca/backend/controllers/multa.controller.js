@@ -1,9 +1,21 @@
 import Multa from '../models/multa.model.js';
+import Pagamento from '../models/pagamento.model.js';
 import Emprestimo from '../models/emprestimo.model.js';
 import Exemplar from '../models/exemplar.model.js';
 import Produto from '../models/produto.model.js';
 
 const MS_POR_DIA = 1000 * 60 * 60 * 24;
+
+async function atualizarStatusMulta(idMult) {
+  const multa = await Multa.findById(idMult);
+  if (!multa) return;
+  const pagamentos = await Pagamento.find({ idMult });
+  const totalPago = pagamentos.reduce((acc, pg) => acc + pg.valPagto, 0);
+  const novoStatus = totalPago >= multa.valMult ? 'PAGO' : 'PENDENTE';
+  if (multa.dscStatusMult !== novoStatus) {
+    await Multa.findByIdAndUpdate(idMult, { dscStatusMult: novoStatus }, { new: true, runValidators: true });
+  }
+}
 
 // Calcula o valor da multa por atraso com base nas datas do empréstimo
 // e no valor da multa diária do produto vinculado ao exemplar.
@@ -58,6 +70,7 @@ export const getMultaById = async (req, res) => {
 export const createMulta = async (req, res) => {
   try {
     const dados = { ...req.body };
+    if (!dados.dscStatusMult) dados.dscStatusMult = 'PENDENTE';
 
     if (dados.dscTipMult === 'atraso') {
       const calc = await calcularMultaAtraso(dados.idEmpr);
@@ -97,7 +110,10 @@ export const updateMulta = async (req, res) => {
       runValidators: true,
     });
     if (!multa) return res.status(404).json({ error: 'Multa não encontrada' });
-    res.json(multa);
+
+    await atualizarStatusMulta(multa._id);
+    const updatedMulta = await Multa.findById(multa._id);
+    res.json(updatedMulta);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

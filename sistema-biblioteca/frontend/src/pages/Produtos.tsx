@@ -12,10 +12,10 @@ import { useConfirm } from '../contexts/ConfirmContext'
 import { type Produto, getProdutos, createProduto, updateProduto, deleteProduto } from '../services/produtos.service'
 import { getEditoras, type Editora, createEditora } from '../services/editoras.service'
 import { getAutores, type Autor, createAutor } from '../services/autores.service'
-import { getExemplares, type Exemplar, createExemplar } from '../services/exemplares.service'
+import { getExemplares, type Exemplar, createExemplar, deleteExemplar } from '../services/exemplares.service'
 import { getEmprestimos, type Emprestimo } from '../services/emprestimos.service'
 import { getAssociados, type Associado } from '../services/associados.service'
-
+import { formatDateBR, formatToDateInput, maskDateInput, formatToISO } from '../utils/date'
 
 const TIPOS = ['livro', 'cd', 'dvd', 'revista', 'jornal', 'nuvem', 'mapa', 'audiobook', 'software', 'outro'] as const
 const tipoBadge: Record<string, string> = {
@@ -35,18 +35,7 @@ function normalizeStr(str: string): string {
 }
 
 function formatDate(dateVal: any): string {
-  if (!dateVal) return '';
-  const d = new Date(dateVal);
-  if (isNaN(d.getTime())) {
-    if (/^\d{4}$/.test(String(dateVal))) {
-      return `01/01/${dateVal}`;
-    }
-    return String(dateVal);
-  }
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const year = d.getUTCFullYear();
-  return `${day}/${month}/${year}`;
+  return formatDateBR(dateVal)
 }
 
 
@@ -100,8 +89,13 @@ function getCategoriaLabel(tipo: string): string {
   return 'Categoria';
 }
 
+<<<<<<< HEAD
 type Form = { codProd: string; dscTituloProd: string; valMultaDiarProd: string; valVendaProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutores: string[]; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
 const empty: Form = { codProd: '', dscTituloProd: '', valMultaDiarProd: '1.00', valVendaProd: '0.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutores: [], qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
+=======
+type Form = { codProd: string; dscTituloProd: string; valPrecoProd: string; valMultaDiarProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutor: string; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
+const empty: Form = { codProd: '', dscTituloProd: '', valPrecoProd: '0.00', valMultaDiarProd: '1.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutor: '', qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
+>>>>>>> 350a645d7b530322f45244520433d9f2e61468e6
 const getMultaForTipo = (tipo: string) => {
   if (['cd', 'dvd'].includes(tipo)) return '2.00';
   if (['nuvem', 'audiobook', 'software'].includes(tipo)) return '0.00';
@@ -124,6 +118,7 @@ export default function Produtos() {
   const [editoras, setEditoras] = useState<Record<string, string>>({})
   const [associadosMap, setAssociadosMap] = useState<Record<string, string>>({})
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [exemplarSaving, setExemplarSaving] = useState(false)
   const { confirm } = useConfirm()
 
   const load = useCallback(async () => {
@@ -187,16 +182,11 @@ export default function Produtos() {
         if (p.dscTipoProd === 'nuvem' || p.dscTipoProd === 'audiobook') {
           return disponibilidadeFilter === 'disponivel';
         }
-        const pEx = exemplares.filter(ex => ex.idProd === p._id);
-        const total = pEx.length;
-        const activeLoans = emprestimos.filter(em => 
-          em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
-          pEx.some(ex => ex._id === em.idExemplar)
-        );
-        const available = total - activeLoans.length;
+        const pEx = exemplares.filter(ex => ex.idProd === p._id && ex.estado !== 'Vendido');
+        const available = pEx.filter(exemplar => exemplar.dscStatusExemplar === 'Disponível').length;
 
         if (disponibilidadeFilter === 'disponivel') {
-          return total > 0 && available > 0;
+          return available > 0;
         }
         if (disponibilidadeFilter === 'indisponivel') {
           return available === 0;
@@ -226,16 +216,15 @@ export default function Produtos() {
           if (p.dscTipoProd === 'nuvem' || p.dscTipoProd === 'audiobook') {
             dispText = 'disponível digital';
           } else {
-            const pEx = exemplares.filter(ex => ex.idProd === p._id)
+            const pEx = exemplares.filter(ex => ex.idProd === p._id && ex.dscStatusExemplar !== 'Vendido')
             const total = pEx.length
-            const activeLoans = emprestimos.filter(em => 
-              em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
-              pEx.some(ex => ex._id === em.idExemplar)
-            )
-            const available = total - activeLoans.length
+            // const activeLoans = emprestimos.filter(em => 
+            //   em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
+            //   pEx.some(ex => ex._id === em.idExemplar)
+            // )
+            const available = pEx.filter(exemplar => exemplar.dscStatusExemplar === 'Disponível').length;
             if (total === 0) dispText = 'sem exemplares';
             else if (available > 0) dispText = 'disponível';
-            else dispText = 'emprestado';
           }
           dispText = normalizeStr(dispText);
 
@@ -292,6 +281,7 @@ export default function Produtos() {
     const payload: Omit<Produto, '_id'> = {
       codProd:          form.codProd,
       dscTituloProd:    form.dscTituloProd,
+      valPrecoProd:     Number(form.valPrecoProd),
       valMultaDiarProd: Number(form.valMultaDiarProd),
       valVendaProd:     Number(form.valVendaProd),
       dscTipoProd:      form.dscTipoProd,
@@ -312,11 +302,12 @@ export default function Produtos() {
       const isDigital = form.dscTipoProd === 'nuvem' || form.dscTipoProd === 'audiobook'
       const qty = isDigital ? 0 : (Number(form.qtdExemplares) || 0)
       if (prodId && qty > 0) {
-        const promises = []
         for (let i = 0; i < qty; i++) {
-          promises.push(createExemplar({ idProd: prodId }))
+          // await each criação para evitar condição de corrida no servidor
+          // ao gerar o `codExemplar` único.
+          // eslint-disable-next-line no-await-in-loop
+          await createExemplar({ idProd: prodId })
         }
-        await Promise.all(promises)
       }
     }
     close(); load()
@@ -350,6 +341,7 @@ export default function Produtos() {
                 <Th>#</Th>
                 <Th>Código</Th>
                 <Th>Produto</Th>
+                <Th>Preço</Th>
                 <Th>Lançamento</Th>
                 <Th>
                   <ColumnMultiFilter
@@ -427,11 +419,11 @@ export default function Produtos() {
                       }
                       const pEx = exemplares.filter(ex => ex.idProd === p._id)
                       const total = pEx.length
-                      const activeLoans = emprestimos.filter(em => 
-                        em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
-                        pEx.some(ex => ex._id === em.idExemplar)
-                      )
-                      const available = total - activeLoans.length
+                      // const activeLoans = emprestimos.filter(em => 
+                      //   em.status !== 'cancelado' && !em.datEfetEntrEmpr && 
+                      //   pEx.some(ex => ex._id === em.idExemplar)
+                      // )
+                      const available = pEx.filter(exemplar => exemplar.dscStatusExemplar === 'Disponível').length;
                       if (total === 0) {
                         return (
                           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
@@ -448,9 +440,9 @@ export default function Produtos() {
                         )
                       }
                       return (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                          Emprestado ({total}/{total})
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200 inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                          Disponível ({available}/{total})
                         </span>
                       )
                     })()}
@@ -557,6 +549,10 @@ export default function Produtos() {
               )}
               
               <div>
+                <span className="block text-gray-500 text-xs mb-1">Preço de Venda</span>
+                <span className="font-medium text-gray-900">R$ {viewing.valPrecoProd?.toFixed(2)}</span>
+              </div>
+              <div>
                 <span className="block text-gray-500 text-xs mb-1">Multa Diária (Atraso)</span>
                 <span className="font-medium text-gray-900">R$ {viewing.valMultaDiarProd.toFixed(2)}</span>
               </div>
@@ -569,7 +565,26 @@ export default function Produtos() {
             
             {viewing.dscTipoProd !== 'nuvem' && viewing.dscTipoProd !== 'audiobook' && (
               <div className="pt-4 border-t border-gray-100">
-                <h4 className="font-bold text-gray-900 mb-3">Exemplares e Disponibilidade</h4>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                  <h4 className="font-bold text-gray-900">Exemplares e Disponibilidade</h4>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!viewing?._id) return
+                      setExemplarSaving(true)
+                      try {
+                        await createExemplar({ idProd: viewing._id })
+                        await load()
+                      } finally {
+                        setExemplarSaving(false)
+                      }
+                    }}
+                    disabled={exemplarSaving}
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:bg-blue-200"
+                  >
+                    <BookPlus size={14} /> Adicionar exemplar
+                  </button>
+                </div>
                 {(() => {
                   const pEx = exemplares.filter(ex => ex.idProd === viewing._id)
                   if (pEx.length === 0) {
@@ -584,11 +599,13 @@ export default function Produtos() {
                             <th className="px-4 py-2 border-b border-gray-200">Estado Físico</th>
                             <th className="px-4 py-2 border-b border-gray-200 w-28">Status</th>
                             <th className="px-4 py-2 border-b border-gray-200">Detalhes</th>
+                            <th className="px-4 py-2 border-b border-gray-200 w-28">Ações</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {pEx.map(ex => {
                             const activeLoan = emprestimos.find(em => em.status !== 'cancelado' && !em.datEfetEntrEmpr && em.idExemplar === ex._id)
+                            const canDelete = !!ex._id && !activeLoan
                             return (
                               <tr key={ex._id} className="bg-white">
                                 <td className="px-4 py-2.5 font-mono text-gray-600 text-xs">{ex.codExemplar || ex._id}</td>
@@ -604,15 +621,13 @@ export default function Produtos() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-2.5">
-                                  {activeLoan ? (
-                                    <span className="inline-block w-20 text-center py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                      Emprestado
-                                    </span>
-                                  ) : (
-                                    <span className="inline-block w-20 text-center py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      Disponível
-                                    </span>
-                                  )}
+                                  <span className={`inline-block w-20 text-center py-0.5 rounded-full text-[10px] font-semibold border ${
+                                    ex.dscStatusExemplar === 'Vendido' ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                                    ex.dscStatusExemplar === 'Emprestado' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                    'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  }`}>
+                                    {ex.dscStatusExemplar || 'Disponível'}
+                                  </span>
                                 </td>
                                 <td className="px-4 py-2.5 text-xs text-gray-500">
                                   {activeLoan ? (
@@ -624,6 +639,26 @@ export default function Produtos() {
                                   ) : (
                                     'Pronto para empréstimo'
                                   )}
+                                </td>
+                                <td className="px-4 py-2.5 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.stopPropagation()
+                                      if (!ex._id) return
+                                      setExemplarSaving(true)
+                                      try {
+                                        await deleteExemplar(ex._id)
+                                        await load()
+                                      } finally {
+                                        setExemplarSaving(false)
+                                      }
+                                    }}
+                                    disabled={!canDelete || exemplarSaving}
+                                    className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                                  >
+                                    <Trash2 size={12} /> Remover
+                                  </button>
                                 </td>
                               </tr>
                             )
@@ -651,14 +686,8 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
 
   const getInitialDateStr = (dateVal: any): string => {
     if (!dateVal) return '';
-    const d = new Date(dateVal);
-    if (isNaN(d.getTime())) {
-      if (/^\d{4}$/.test(String(dateVal))) {
-        return `${dateVal}-01-01`;
-      }
-      return '';
-    }
-    return d.toISOString().slice(0, 10);
+    const formatted = formatToDateInput(dateVal);
+    return formatted;
   };
 
   const getNextId = useCallback((materialType: 'livro' | 'periodico' | 'outros') => {
@@ -688,6 +717,7 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
       return {
         codProd: initial.codProd || '',
         dscTituloProd: initial.dscTituloProd,
+        valPrecoProd: String(initial.valPrecoProd ?? 0),
         valMultaDiarProd: String(initial.valMultaDiarProd),
         valVendaProd: String(initial.valVendaProd || 0),
         dscTipoProd: initial.dscTipoProd,
@@ -732,6 +762,7 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
       ? {
           codProd: initial.codProd || '',
           dscTituloProd: initial.dscTituloProd,
+          valPrecoProd: String(initial.valPrecoProd ?? 0),
           valMultaDiarProd: String(initial.valMultaDiarProd),
           valVendaProd: String(initial.valVendaProd || 0),
           dscTipoProd: initial.dscTipoProd,
@@ -747,6 +778,7 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
           ...empty,
           codProd: getNextId('livro'),
           dscTipoProd: 'livro',
+          valPrecoProd: '0.00',
           valMultaDiarProd: '1.00'
         });
     setError('')
@@ -796,7 +828,12 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
         })
       }
       
-      await onSubmit({ ...form, autores: finalAutores as any })
+      const formToSubmit = {
+        ...form,
+        autores: finalAutores as any,
+        numAnoPublProd: formatToISO(form.numAnoPublProd)
+      };
+      await onSubmit(formToSubmit)
     } catch {
       setError('Erro ao salvar.')
     } finally {
@@ -805,6 +842,11 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
   }
 
   const s = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  const sDate = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const masked = maskDateInput(e.target.value);
+    setForm((f) => ({ ...f, [k]: masked }));
+  };
 
   const handleTipoChange = (val: typeof TIPOS[number]) => {
     setForm((f) => ({
@@ -990,9 +1032,11 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
           <div className="grid grid-cols-2 gap-4">
             <F label={isCDorDVD ? 'Data de Lançamento' : 'Data de Publicação'}>
               <input
-                type="date"
+                type="text"
                 value={form.numAnoPublProd}
-                onChange={s('numAnoPublProd')}
+                onChange={sDate('numAnoPublProd')}
+                placeholder="DD/MM/AAAA"
+                maxLength={10}
                 className={inp}
               />
             </F>
@@ -1022,6 +1066,16 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
 
         <Section icon={DollarSign} title="Valores & Financeiro">
           <div className="grid grid-cols-2 gap-4">
+            <F label="Preço de Venda (R$)" required>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.valPrecoProd}
+                onChange={s('valPrecoProd')}
+                className={inp}
+              />
+            </F>
             <F label="Multa Diária (R$) - Automático">
               <input type="number" disabled value={form.valMultaDiarProd} className={inp + ' bg-gray-50 cursor-not-allowed opacity-75'} />
             </F>

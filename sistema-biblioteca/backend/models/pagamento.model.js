@@ -3,7 +3,12 @@ import mongoose from 'mongoose';
 const pagamentoSchema = new mongoose.Schema({
     idMult: {
         type: String,
-        required: [true, 'Multa é obrigatória'],
+    },
+    idExemplar: {
+        type: String,
+    },
+    idAssoc: {
+        type: String,
     },
     valPagto: {
         type: Number,
@@ -22,6 +27,12 @@ const pagamentoSchema = new mongoose.Schema({
         default: 0,
     },
 }, { timestamps: true });
+
+pagamentoSchema.pre('validate', function () {
+    if (!this.idMult && !this.idExemplar) {
+        this.invalidate('idMult', 'Pagamento deve estar associado a uma multa ou compra.');
+    }
+});
 
 const Pagamento = mongoose.model('Pagamento', pagamentoSchema);
 

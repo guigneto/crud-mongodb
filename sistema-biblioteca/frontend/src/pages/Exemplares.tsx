@@ -6,6 +6,7 @@ import SearchBar from '../components/SearchBar'
 import CustomSelect from '../components/CustomSelect'
 import { type Exemplar, getExemplares, createExemplar, updateExemplar, deleteExemplar } from '../services/exemplares.service'
 import { getProdutos, type Produto } from '../services/produtos.service'
+import { formatDateBR } from '../utils/date'
 
 type Form = { idProd: string; quantidade?: number }
 
@@ -93,7 +94,7 @@ export default function Exemplares() {
       {loading ? <Skeleton /> : !filtered.length ? <p className="text-center text-gray-400 py-16">Nenhum exemplar encontrado.</p> : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
           <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50 text-gray-600 text-left"><Th>#</Th><Th>ID do Produto</Th><Th>Criado em</Th><Th right>Ações</Th></tr></thead>
+            <thead><tr className="bg-gray-50 text-gray-600 text-left"><Th>#</Th><Th>ID do Produto</Th><Th>Estado Físico</Th><Th>Status</Th><Th>Criado em</Th><Th right>Ações</Th></tr></thead>
             <tbody>
               {paginated.map((e, i) => (
                 <tr key={e._id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
@@ -106,7 +107,27 @@ export default function Exemplares() {
                       return idx !== -1 ? ` (Exemplar #${idx + 1})` : '';
                     })()}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{(e as { createdAt?: string }).createdAt?.slice(0, 10) ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block w-20 text-center py-0.5 rounded text-[10px] font-semibold border ${
+                      e.estado === 'Excelente' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                      e.estado === 'Bom' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      e.estado === 'Danificado' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      e.estado === 'Perdido' ? 'bg-red-50 text-red-700 border-red-200' :
+                      'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}>
+                      {e.estado || 'Excelente'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block w-24 text-center py-0.5 rounded-full text-[10px] font-semibold border ${
+                      e.dscStatusExemplar === 'Vendido' ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                      e.dscStatusExemplar === 'Emprestado' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                      'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}>
+                      {e.dscStatusExemplar || 'Disponível'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{(e as { createdAt?: string }).createdAt ? formatDateBR((e as { createdAt?: string }).createdAt) : '—'}</td>
                   <td className="px-4 py-3"><TableActions onEdit={() => openEdit(e)} onDelete={() => handleDelete(e._id!)} /></td>
                 </tr>
               ))}
@@ -186,6 +207,6 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
   return <th className={`px-4 py-3 font-medium${right ? ' text-right' : ''}`}>{children}</th>
 }
 
-const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
+// const btn    = 'flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'
 const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'

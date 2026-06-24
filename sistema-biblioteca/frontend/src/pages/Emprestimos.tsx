@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef, type FormEvent } from 'react'
 import { PlusCircle, CheckCircle2, BookOpen, UserCheck, ArrowRight, ArrowLeft, AlertTriangle, Crown, ShieldCheck, Search, X, Plus, Trash2, Calendar, Clock, ChevronDown, User, BookOpenCheck, Filter as FilterIcon, RefreshCw, XCircle } from 'lucide-react'
 import Modal from '../components/Modal'
 import CustomSelect from '../components/CustomSelect'
@@ -7,6 +7,7 @@ import { type Emprestimo, getEmprestimos, createEmprestimo, updateEmprestimo, de
 import { getAssociados, type Associado } from '../services/associados.service'
 import { getExemplares, type Exemplar } from '../services/exemplares.service'
 import { getProdutos, type Produto } from '../services/produtos.service'
+import { formatDateBR, formatToDateInput } from '../utils/date'
 
 
 type Status = 'ativo' | 'atrasado' | 'devolvido' | 'cancelado'
@@ -416,7 +417,7 @@ export default function Emprestimos() {
       })()}
 
       <Modal open={open} onClose={close} title="Novo Empréstimo" maxWidth="max-w-3xl">
-        <EmprestimoForm onSubmit={handleSubmit} onCancel={close} associados={associados} exemplares={exemplares} />
+        <EmprestimoForm onSubmit={handleSubmit} onCancel={close} associados={associados} exemplares={exemplares} emprestimos={data} />
       </Modal>
     </div>
   )
@@ -424,7 +425,7 @@ export default function Emprestimos() {
 
 /* ─── Stepper Form ─── */
 
-function EmprestimoForm({ onSubmit, onCancel, associados, exemplares }: { onSubmit: (f: Form) => Promise<void>; onCancel: () => void; associados: Associado[]; exemplares: Exemplar[] }) {
+function EmprestimoForm({ onSubmit, onCancel, associados, exemplares, emprestimos }: { onSubmit: (f: Form) => Promise<void>; onCancel: () => void; associados: Associado[]; exemplares: Exemplar[]; emprestimos: Emprestimo[] }) {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<Form>(getEmptyForm())
   const [saving, setSaving] = useState(false)
@@ -468,6 +469,7 @@ function EmprestimoForm({ onSubmit, onCancel, associados, exemplares }: { onSubm
   const selectedAssociado = associados.find(a => a._id === form.idAssoc)
   const isVip = selectedAssociado?.dscTipoAssoc === 'vip'
   const limiteAtingido = !isVip && ativosCount !== null && ativosCount >= 3
+  const availableExemplares = exemplares.filter(ex => ex.dscStatusExemplar === 'Disponível' || !ex.dscStatusExemplar)
 
   function goNext() {
     if (step === 1) {
@@ -499,7 +501,7 @@ function EmprestimoForm({ onSubmit, onCancel, associados, exemplares }: { onSubm
     else if (step === 2) setStep(1)
   }
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault()
     if (!form.idAssoc || form.idExemplares.length === 0) { setError('Dados incompletos.'); return }
     setSaving(true); setError('')
@@ -547,7 +549,7 @@ function EmprestimoForm({ onSubmit, onCancel, associados, exemplares }: { onSubm
               selectedIds={form.idExemplares}
               onAdd={(id) => setForm(f => ({ ...f, idExemplares: [...f.idExemplares, id] }))}
               onRemove={(id) => setForm(f => ({ ...f, idExemplares: f.idExemplares.filter(x => x !== id) }))}
-              exemplares={exemplares}
+              exemplares={availableExemplares}
               produtos={produtos}
             />
             {error && <p className="text-sm text-red-500">{error}</p>}
@@ -733,14 +735,14 @@ function EmprestimoForm({ onSubmit, onCancel, associados, exemplares }: { onSubm
                 <label className="block text-sm font-medium text-gray-700 mb-1">Data de empréstimo</label>
                 <div className="relative">
                   <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="date" value={form.datRetEmpr} readOnly className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed" />
+                  <input type="text" value={formatDateBR(form.datRetEmpr)} readOnly className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Data de devolução</label>
                 <div className="relative">
                   <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="date" value={form.datPrevEntrEmpr} readOnly className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed" />
+                  <input type="text" value={formatDateBR(form.datPrevEntrEmpr)} readOnly className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed" />
                 </div>
               </div>
             </div>
