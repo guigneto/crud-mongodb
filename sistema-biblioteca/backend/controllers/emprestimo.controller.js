@@ -33,18 +33,15 @@ export const createEmprestimo = async (req, res) => {
       }
     }
 
-    const ultimoEmpr = await Emprestimo.findOne().sort({ createdAt: -1 });
-    let nextNum = 1;
-    if (ultimoEmpr && ultimoEmpr.codEmpr) {
-      const parsed = parseInt(ultimoEmpr.codEmpr);
-      if (!isNaN(parsed)) {
-        nextNum = parsed + 1;
-      } else {
-        const match = ultimoEmpr.codEmpr.match(/E-(\d+)/);
-        if (match) nextNum = parseInt(match[1]) + 1;
+    if (!req.body.codEmpr) {
+      const ultimoEmpr = await Emprestimo.findOne({ codEmpr: /^EMP-/ }).sort({ createdAt: -1 });
+      let nextNum = 1;
+      if (ultimoEmpr && ultimoEmpr.codEmpr) {
+        const match = ultimoEmpr.codEmpr.match(/EMP-(\d+)/);
+        if (match) nextNum = parseInt(match[1], 10) + 1;
       }
+      req.body.codEmpr = `EMP-${String(nextNum).padStart(5, '0')}`;
     }
-    req.body.codEmpr = String(nextNum);
 
     const emprestimo = await Emprestimo.create(req.body);
     res.status(201).json(emprestimo);

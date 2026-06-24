@@ -17,9 +17,9 @@ const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString('pt-B
 // Resultado do cálculo da multa por atraso
 export type CalcAtraso = { diasAtraso: number; valorDiaria: number; valMult: number }
 
-const TIPOS = ['atraso', 'dano_perda'] as const
-const tipoLabel = { atraso: 'Atraso', dano_perda: 'Dano / Perda' }
-const tipoBadge = { atraso: 'bg-blue-100 text-blue-700', dano_perda: 'bg-red-100 text-red-700' }
+const TIPOS = ['atraso', 'dano_perda', 'atraso_dano'] as const
+const tipoLabel = { atraso: 'Atraso', dano_perda: 'Dano / Perda', atraso_dano: 'Atraso + Dano' }
+const tipoBadge = { atraso: 'bg-blue-100 text-blue-700', dano_perda: 'bg-red-100 text-red-700', atraso_dano: 'bg-purple-100 text-purple-700' }
 
 const FORMAS: FormaPagto[] = ['dinheiro', 'cartao_credito', 'cartao_debito', 'picpay', 'pix']
 const formaLabel: Record<FormaPagto, string> = {
@@ -104,7 +104,7 @@ export default function Multas() {
     if (!e) return `Empréstimo #${String(idEmpr).slice(-6)}`
     const titulo = produtoMap[exemplarToProd[e.idExemplar]]?.dscTituloProd
     const assoc = assocMap[e.idAssoc]
-    const partes = [`#${e._id!.slice(-6)}`]
+    const partes = [e.codEmpr || `#${e._id!.slice(-6)}`]
     if (titulo) partes.push(titulo)
     if (assoc) partes.push(assoc)
     partes.push(`venc. ${fmtDate(e.datPrevEntrEmpr)}`)
@@ -115,7 +115,7 @@ export default function Multas() {
   const emprestimoInfo = useCallback((idEmpr: string) => {
     const e = emprestimos.find((x) => x._id === idEmpr)
     return {
-      idCurto: `#${String(idEmpr).slice(-6)}`,
+      idCurto: e && e.codEmpr ? e.codEmpr : `#${String(idEmpr).slice(-6)}`,
       assoc: (e && assocMap[e.idAssoc]) || '—',
       titulo: (e && produtoMap[exemplarToProd[e.idExemplar]]?.dscTituloProd) || '—',
       prevista: e ? fmtDate(e.datPrevEntrEmpr) : '—',
@@ -130,6 +130,12 @@ export default function Multas() {
     const entrega = e.datEfetEntrEmpr ? new Date(e.datEfetEntrEmpr) : new Date()
     const diasAtraso = Math.max(0, Math.ceil((entrega.getTime() - prevista.getTime()) / MS_POR_DIA))
     return { diasAtraso, valorDiaria, valMult: diasAtraso * valorDiaria }
+  }, [emprestimos, produtoMap, exemplarToProd])
+
+  const calcDanoPerda = useCallback((idEmpr: string): number => {
+    const e = emprestimos.find((x) => x._id === idEmpr)
+    if (!e) return 0
+    return produtoMap[exemplarToProd[e.idExemplar]]?.valVendaProd ?? 0
   }, [emprestimos, produtoMap, exemplarToProd])
 
   const pagtoByMulta = useMemo(() => {
@@ -182,8 +188,11 @@ export default function Multas() {
   }
 
   async function handleSubmitMulta(form: MultaForm) {
-    // Para multa por atraso, o valor é calculado automaticamente (frontend exibe, backend confirma).
-    const valMult = form.dscTipMult === 'atraso' && form.idEmpr ? calcAtraso(form.idEmpr).valMult : Number(form.valMult)
+    let valMult = Number(form.valMult)
+    if (form.dscTipMult === 'atraso' && form.idEmpr) valMult = calcAtraso(form.idEmpr).valMult
+    else if (form.dscTipMult === 'dano_perda' && form.idEmpr) valMult = calcDanoPerda(form.idEmpr)
+    else if (form.dscTipMult === 'atraso_dano' && form.idEmpr) valMult = calcAtraso(form.idEmpr).valMult + calcDanoPerda(form.idEmpr)
+
     const payload = { idEmpr: form.idEmpr, dscTipMult: form.dscTipMult, valMult }
     if (editing) await updateMulta(editing._id!, payload)
     else await createMulta(payload)
@@ -303,6 +312,7 @@ export default function Multas() {
           emprestimos={emprestimos}
           emprestimoLabel={emprestimoLabel}
           calcAtraso={calcAtraso}
+          calcDanoPerda={calcDanoPerda}
         />
       </Modal>
 
@@ -325,13 +335,14 @@ export default function Multas() {
 }
 
 /* ── Multa Form ────────────────────────────────────────────────────── */
-function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, emprestimoLabel, calcAtraso }: {
+function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, emprestimoLabel, calcAtraso, calcDanoPerda }: {
   initial?: Multa
   onSubmit: (f: MultaForm) => Promise<void>
   onCancel: () => void
   emprestimos: Emprestimo[]
   emprestimoLabel: (idEmpr: string) => string
   calcAtraso: (idEmpr: string) => CalcAtraso
+  calcDanoPerda: (idEmpr: string) => number
 }) {
   const [form, setForm] = useState<MultaForm>(initial
     ? { idEmpr: String(initial.idEmpr), dscTipMult: initial.dscTipMult, valMult: String(initial.valMult) }
@@ -344,8 +355,22 @@ function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, empresti
     setError('')
   }, [initial])
 
-  const isAtraso = form.dscTipMult === 'atraso'
+  const isAtraso = form.dscTipMult === 'atraso' || form.dscTipMult === 'atraso_dano'
+  const isDanoPerda = form.dscTipMult === 'dano_perda' || form.dscTipMult === 'atraso_dano'
+  const isCombined = form.dscTipMult === 'atraso_dano'
   const calc = isAtraso && form.idEmpr ? calcAtraso(form.idEmpr) : null
+  const calcDP = isDanoPerda && form.idEmpr ? calcDanoPerda(form.idEmpr) : 0
+  const combinedTotal = (calc?.valMult ?? 0) + (calcDP ?? 0)
+
+  const sortedEmprestimos = useMemo(() => {
+    return [...emprestimos].sort((a, b) => {
+      const aAtraso = calcAtraso(a._id!).diasAtraso
+      const bAtraso = calcAtraso(b._id!).diasAtraso
+      if (aAtraso > 0 && bAtraso === 0) return -1
+      if (bAtraso > 0 && aAtraso === 0) return 1
+      return new Date(b.datPrevEntrEmpr || 0).getTime() - new Date(a.datPrevEntrEmpr || 0).getTime()
+    })
+  }, [emprestimos, calcAtraso])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -362,7 +387,11 @@ function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, empresti
         <CustomSelect
           value={form.idEmpr}
           onChange={(val) => setForm(f => ({ ...f, idEmpr: val }))}
-          options={emprestimos.map((e) => ({ value: e._id!, label: emprestimoLabel(e._id!) }))}
+          options={sortedEmprestimos.map((e) => {
+            const atraso = calcAtraso(e._id!).diasAtraso;
+            const label = emprestimoLabel(e._id!) + (atraso > 0 ? ` ⚠️ Atrasado (${atraso} dias)` : '');
+            return { value: e._id!, label };
+          })}
           placeholder="Selecione o empréstimo..."
           searchable
           searchPlaceholder="Buscar por livro, associado ou ID..."
@@ -378,10 +407,20 @@ function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, empresti
           />
         </F>
         <F label="Valor" required>
-          {isAtraso ? (
+          {isCombined ? (
+            <div className={`${inpWrap} bg-gray-50`}>
+              <span className="text-gray-500 select-none">R$</span>
+              <span className="font-medium text-gray-900">{combinedTotal.toFixed(2)}</span>
+            </div>
+          ) : isAtraso ? (
             <div className={`${inpWrap} bg-gray-50`}>
               <span className="text-gray-500 select-none">R$</span>
               <span className="font-medium text-gray-900">{(calc?.valMult ?? 0).toFixed(2)}</span>
+            </div>
+          ) : isDanoPerda ? (
+            <div className={`${inpWrap} bg-gray-50`}>
+              <span className="text-gray-500 select-none">R$</span>
+              <span className="font-medium text-gray-900">{(calcDP ?? 0).toFixed(2)}</span>
             </div>
           ) : (
             <div className={inpWrap}>
@@ -405,6 +444,16 @@ function MultaFormComponent({ initial, onSubmit, onCancel, emprestimos, empresti
             <>Cálculo automático: <span className="font-semibold">{calc.diasAtraso} dia(s)</span> de atraso × <span className="font-semibold">R$ {calc.valorDiaria.toFixed(2)}/dia</span> = <span className="font-semibold">R$ {calc.valMult.toFixed(2)}</span>.</>
           ) : (
             'Este empréstimo não está em atraso — o valor calculado é R$ 0,00.'
+          )}
+        </div>
+      )}
+
+      {isDanoPerda && (
+        <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+          {!form.idEmpr ? (
+            'Selecione o empréstimo para obter o valor do produto.'
+          ) : (
+            <>Cálculo automático pelo valor do produto: <span className="font-semibold">R$ {calcDP.toFixed(2)}</span>.</>
           )}
         </div>
       )}

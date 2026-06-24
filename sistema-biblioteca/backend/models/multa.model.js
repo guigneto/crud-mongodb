@@ -8,7 +8,7 @@ const multaSchema = new mongoose.Schema({
     dscTipMult: {
         type: String,
         required: [true, 'Tipo de multa é obrigatório'],
-        enum: ['atraso', 'dano_perda'],
+        enum: ['atraso', 'dano_perda', 'atraso_dano'],
     },
     valMult: {
         type: Number,

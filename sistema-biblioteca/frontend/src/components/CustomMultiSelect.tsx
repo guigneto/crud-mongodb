@@ -1,39 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, X } from 'lucide-react'
 
 export type SelectOption = { value: string; label: string }
 
-interface CustomSelectProps {
-  value: string
-  onChange: (val: string) => void
+interface CustomMultiSelectProps {
+  values: string[]
+  onChange: (vals: string[]) => void
   options: SelectOption[]
   placeholder?: string
-  disabled?: boolean
-  disabledPlaceholder?: string
-  variant?: 'default' | 'warm'
   searchable?: boolean
-  icon?: React.ReactNode
   searchPlaceholder?: string
   creatable?: boolean
   onCreate?: (val: string) => Promise<string | undefined>
   className?: string
 }
 
-export default function CustomSelect({
-  value,
+export default function CustomMultiSelect({
+  values,
   onChange,
   options,
   placeholder = 'Selecione...',
-  disabled = false,
-  disabledPlaceholder = '',
-  variant = 'default',
   searchable = false,
-  icon,
   searchPlaceholder = 'Pesquisar...',
   creatable = false,
   onCreate,
   className,
-}: CustomSelectProps) {
+}: CustomMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -54,10 +46,6 @@ export default function CustomSelect({
     }
   }, [open])
 
-  const selectedLabel = options.find((o) => o.value === value)?.label || placeholder
-  const isWarm = variant === 'warm';
-
-  // Accent-insensitive and case-insensitive filter
   const normalize = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
 
@@ -65,38 +53,45 @@ export default function CustomSelect({
     normalize(o.label).includes(normalize(searchTerm))
   )
 
-  if (disabled) {
-    return (
-      <div className={`w-full border rounded-lg px-3 py-2 text-sm cursor-not-allowed opacity-60 flex justify-between items-center ${
-        isWarm ? 'border-warm-200 bg-warm-50 text-gray-400' : 'border-gray-200 bg-gray-100 text-gray-400'
-      }`}>
-        <span>{disabledPlaceholder || placeholder}</span>
-        <ChevronDown size={16} className="text-gray-400" />
-      </div>
-    )
+  const selectedOptions = values.map(v => options.find(o => o.value === v)).filter(Boolean) as SelectOption[]
+
+  function toggleOption(val: string) {
+    if (values.includes(val)) {
+      onChange(values.filter(v => v !== val))
+    } else {
+      onChange([...values, val])
+    }
+  }
+
+  function removeOption(e: React.MouseEvent, val: string) {
+    e.stopPropagation()
+    onChange(values.filter(v => v !== val))
   }
 
   return (
     <div className="relative" ref={ref}>
       <div
         onClick={() => setOpen(!open)}
-        className={className || `w-full border rounded-lg px-3 py-2 text-sm cursor-pointer flex justify-between items-center transition-colors ${
-          isWarm 
-            ? 'border-warm-300 bg-warm-50/30 hover:bg-warm-50/70 focus-within:ring-2 focus-within:ring-warm-400' 
-            : 'border-gray-300 bg-white hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500'
-        }`}
+        className={className || `w-full border rounded-lg px-2 py-1.5 min-h-[42px] text-sm cursor-pointer flex flex-wrap gap-1 items-center transition-colors border-gray-300 bg-white hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500`}
       >
-        <div className="flex items-center gap-2 overflow-hidden">
-          {icon && <span className="text-gray-400 flex-shrink-0">{icon}</span>}
-          <span className={`truncate ${value ? 'text-gray-900' : 'text-gray-400'}`}>{selectedLabel}</span>
-        </div>
-        <ChevronDown size={16} className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        {selectedOptions.length === 0 ? (
+          <span className="text-gray-400 px-1 py-1">{placeholder}</span>
+        ) : (
+          selectedOptions.map(opt => (
+            <span key={opt.value} className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-200">
+              {opt.label}
+              <button type="button" onClick={(e) => removeOption(e, opt.value)} className="hover:text-blue-900 focus:outline-none">
+                <X size={12} />
+              </button>
+            </span>
+          ))
+        )}
+        <div className="flex-1 min-w-[2px]"></div>
+        <ChevronDown size={16} className={`text-gray-400 flex-shrink-0 transition-transform duration-200 ml-1 ${open ? 'rotate-180' : ''}`} />
       </div>
 
       {open && (
-        <div className={`absolute z-20 w-full mt-1 bg-white border rounded-xl shadow-lg flex flex-col p-1 animate-fadeIn max-h-64 ${
-          isWarm ? 'border-warm-200' : 'border-gray-200'
-        }`}>
+        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col p-1 animate-fadeIn max-h-64">
           {searchable && (
             <div className="p-1 mb-1 bg-white border-b border-gray-100">
               <input
@@ -114,30 +109,30 @@ export default function CustomSelect({
               {filteredOptions.length === 0 && !creatable && (
                   <div className="px-3 py-2 text-xs text-gray-400 text-center">Nenhum resultado encontrado</div>
                 )}
-                {filteredOptions.map((o) => (
-                  <div
-                    key={o.value}
-                    onClick={() => {
-                      onChange(o.value)
-                      setOpen(false)
-                    }}
-                    className={`px-3 py-2 text-sm cursor-pointer rounded-lg transition-colors ${
-                      value === o.value
-                        ? isWarm ? 'bg-warm-100 text-warm-850 font-medium' : 'bg-blue-50 text-blue-700 font-medium'
-                        : isWarm ? 'text-gray-700 hover:bg-warm-50' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {o.label}
-                  </div>
-                ))}
+                {filteredOptions.map((o) => {
+                  const isSelected = values.includes(o.value)
+                  return (
+                    <div
+                      key={o.value}
+                      onClick={() => toggleOption(o.value)}
+                      className={`px-3 py-2 text-sm cursor-pointer rounded-lg transition-colors flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {o.label}
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-blue-500"></span>}
+                    </div>
+                  )
+                })}
                 {creatable && searchTerm.trim() && !filteredOptions.some(o => normalize(o.label) === normalize(searchTerm)) && (
                   <div
                     onClick={async () => {
                       if (onCreate) {
                         const newVal = await onCreate(searchTerm.trim());
                         if (newVal) {
-                          onChange(newVal);
-                          setOpen(false);
+                          toggleOption(newVal);
                         }
                       }
                     }}

@@ -61,7 +61,7 @@ export default function Pagamentos() {
   }
 
   async function handleSubmit(form: Form) {
-    const payload = { idMult: Number(form.idMult), valPagto: Number(form.valPagto), dscFormPagto: form.dscFormPagto, valDescPagto: Number(form.valDescPagto) }
+    const payload = { idMult: String(form.idMult), valPagto: Number(form.valPagto), dscFormPagto: form.dscFormPagto, valDescPagto: Number(form.valDescPagto) }
     if (editing) await updatePagamento(editing._id!, payload)
     else await createPagamento(payload)
     close(); load()

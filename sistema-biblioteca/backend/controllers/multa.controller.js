@@ -24,6 +24,18 @@ async function calcularMultaAtraso(idEmpr) {
   return { diasAtraso, valorDiaria, valMult: diasAtraso * valorDiaria };
 }
 
+// Calcula o valor da multa por dano ou perda com base no preço do produto.
+async function calcularMultaDanoPerda(idEmpr) {
+  const emprestimo = await Emprestimo.findById(idEmpr);
+  if (!emprestimo) return null;
+
+  const exemplar = await Exemplar.findById(emprestimo.idExemplar);
+  const produto = exemplar ? await Produto.findById(exemplar.idProd) : null;
+  const valorProduto = produto?.valVendaProd ?? 0;
+
+  return { valMult: valorProduto };
+}
+
 export const getMultas = async (req, res) => {
   try {
     const multas = await Multa.find();
@@ -51,6 +63,10 @@ export const createMulta = async (req, res) => {
       const calc = await calcularMultaAtraso(dados.idEmpr);
       if (!calc) return res.status(400).json({ error: 'Empréstimo não encontrado para cálculo da multa.' });
       dados.valMult = calc.valMult;
+    } else if (dados.dscTipMult === 'dano_perda') {
+      const calc = await calcularMultaDanoPerda(dados.idEmpr);
+      if (!calc) return res.status(400).json({ error: 'Empréstimo não encontrado para cálculo da multa.' });
+      dados.valMult = calc.valMult;
     }
 
     const multa = await Multa.create(dados);
@@ -67,6 +83,11 @@ export const updateMulta = async (req, res) => {
     if (dados.dscTipMult === 'atraso') {
       const idEmpr = dados.idEmpr ?? (await Multa.findById(req.params.id))?.idEmpr;
       const calc = await calcularMultaAtraso(idEmpr);
+      if (!calc) return res.status(400).json({ error: 'Empréstimo não encontrado para cálculo da multa.' });
+      dados.valMult = calc.valMult;
+    } else if (dados.dscTipMult === 'dano_perda') {
+      const idEmpr = dados.idEmpr ?? (await Multa.findById(req.params.id))?.idEmpr;
+      const calc = await calcularMultaDanoPerda(idEmpr);
       if (!calc) return res.status(400).json({ error: 'Empréstimo não encontrado para cálculo da multa.' });
       dados.valMult = calc.valMult;
     }

@@ -3,6 +3,7 @@ import { BookPlus, BookOpen, Tag, DollarSign, Copy, Newspaper, Disc, Pencil, Tra
 import Modal from '../components/Modal'
 import SearchBar from '../components/SearchBar'
 import CustomSelect from '../components/CustomSelect'
+import CustomMultiSelect from '../components/CustomMultiSelect'
 import MultiSelect from '../components/MultiSelect'
 import ColumnFilter from '../components/ColumnFilter'
 import ColumnMultiFilter from '../components/ColumnMultiFilter'
@@ -99,8 +100,8 @@ function getCategoriaLabel(tipo: string): string {
   return 'Categoria';
 }
 
-type Form = { codProd: string; dscTituloProd: string; valMultaDiarProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutor: string; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
-const empty: Form = { codProd: '', dscTituloProd: '', valMultaDiarProd: '1.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutor: '', qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
+type Form = { codProd: string; dscTituloProd: string; valMultaDiarProd: string; valVendaProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutores: string[]; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
+const empty: Form = { codProd: '', dscTituloProd: '', valMultaDiarProd: '1.00', valVendaProd: '0.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutores: [], qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
 const getMultaForTipo = (tipo: string) => {
   if (['cd', 'dvd'].includes(tipo)) return '2.00';
   if (['nuvem', 'audiobook', 'software'].includes(tipo)) return '0.00';
@@ -292,6 +293,7 @@ export default function Produtos() {
       codProd:          form.codProd,
       dscTituloProd:    form.dscTituloProd,
       valMultaDiarProd: Number(form.valMultaDiarProd),
+      valVendaProd:     Number(form.valVendaProd),
       dscTipoProd:      form.dscTipoProd,
       dscFormatoProd:   form.dscFormatoProd || null,
       idEditora:        form.idEditora,
@@ -558,6 +560,11 @@ export default function Produtos() {
                 <span className="block text-gray-500 text-xs mb-1">Multa Diária (Atraso)</span>
                 <span className="font-medium text-gray-900">R$ {viewing.valMultaDiarProd.toFixed(2)}</span>
               </div>
+              
+              <div>
+                <span className="block text-gray-500 text-xs mb-1">Preço (Em caso de Perda/Dano)</span>
+                <span className="font-medium text-gray-900">R$ {(viewing.valVendaProd || 0).toFixed(2)}</span>
+              </div>
             </div>
             
             {viewing.dscTipoProd !== 'nuvem' && viewing.dscTipoProd !== 'audiobook' && (
@@ -682,10 +689,11 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
         codProd: initial.codProd || '',
         dscTituloProd: initial.dscTituloProd,
         valMultaDiarProd: String(initial.valMultaDiarProd),
+        valVendaProd: String(initial.valVendaProd || 0),
         dscTipoProd: initial.dscTipoProd,
         dscFormatoProd: initial.dscTipoProd === 'nuvem' ? (initial.dscFormatoProd ?? '') : '',
         idEditora: String(initial.idEditora),
-        idAutor: initial.autores && initial.autores.length > 0 ? String(initial.autores[0].idAutor) : '',
+        idAutores: initial.autores ? initial.autores.map((a: any) => String(a.idAutor)) : [],
         qtdExemplares: '0',
         numAnoPublProd: getInitialDateStr(initial.numAnoPublProd),
         numISBNProd: initial.numISBNProd ?? '',
@@ -725,10 +733,11 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
           codProd: initial.codProd || '',
           dscTituloProd: initial.dscTituloProd,
           valMultaDiarProd: String(initial.valMultaDiarProd),
+          valVendaProd: String(initial.valVendaProd || 0),
           dscTipoProd: initial.dscTipoProd,
           dscFormatoProd: initial.dscTipoProd === 'nuvem' ? (initial.dscFormatoProd ?? '') : '',
           idEditora: String(initial.idEditora),
-          idAutor: initial.autores && initial.autores.length > 0 ? String(initial.autores[0].idAutor) : '',
+          idAutores: initial.autores ? initial.autores.map((a: any) => String(a.idAutor)) : [],
           qtdExemplares: '0',
           numAnoPublProd: getInitialDateStr(initial.numAnoPublProd),
           numISBNProd: initial.numISBNProd ?? '',
@@ -779,10 +788,12 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
     
     setSaving(true); setError('')
     try {
-      let finalAutores = []
-      if (form.idAutor) {
-        const autorFound = autores.find(a => a._id === form.idAutor)
-        if (autorFound) finalAutores.push({ idAutor: autorFound._id, nomAutor: autorFound.nome })
+      let finalAutores: { idAutor: string; nomAutor: string }[] = []
+      if (form.idAutores && form.idAutores.length > 0) {
+        form.idAutores.forEach(id => {
+          const autorFound = autores.find(a => a._id === id)
+          if (autorFound) finalAutores.push({ idAutor: autorFound._id!, nomAutor: autorFound.nome })
+        })
       }
       
       await onSubmit({ ...form, autores: finalAutores as any })
@@ -951,10 +962,10 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
                 }}
               />
             </F>
-            <F label="Autor Principal">
-              <CustomSelect
-                value={form.idAutor}
-                onChange={(val) => setForm(f => ({ ...f, idAutor: val }))}
+            <F label="Autores">
+              <CustomMultiSelect
+                values={form.idAutores}
+                onChange={(vals) => setForm(f => ({ ...f, idAutores: vals }))}
                 options={autores.map(a => ({ value: a._id!, label: a.nome }))}
                 placeholder="Selecione ou digite..."
                 searchable
@@ -1013,6 +1024,9 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
           <div className="grid grid-cols-2 gap-4">
             <F label="Multa Diária (R$) - Automático">
               <input type="number" disabled value={form.valMultaDiarProd} className={inp + ' bg-gray-50 cursor-not-allowed opacity-75'} />
+            </F>
+            <F label="Preço do Produto (R$)">
+              <input type="number" min="0" step="0.01" value={form.valVendaProd} onChange={s('valVendaProd')} className={inp} />
             </F>
           </div>
         </Section>

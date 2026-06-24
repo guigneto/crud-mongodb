@@ -8,6 +8,7 @@ export interface Produto {
   codProd?: string | null;
   dscTituloProd: string;
   valMultaDiarProd: number;
+  valVendaProd?: number;
   dscTipoProd: 'livro' | 'cd' | 'dvd' | 'revista' | 'jornal' | 'nuvem' | 'mapa' | 'audiobook' | 'software' | 'outro';
   dscFormatoProd?: 'pdf' | 'video' | null;
   idEditora: string;

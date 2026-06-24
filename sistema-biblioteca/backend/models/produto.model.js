@@ -18,6 +18,11 @@ const produtoSchema = new mongoose.Schema({
         min: [0, 'O valor da multa diária não pode ser negativo'],
         default: 0,
     },
+    valVendaProd: {
+        type: Number,
+        min: [0, 'O preço do produto não pode ser negativo'],
+        default: 0,
+    },
     dscTipoProd: {
         type: String,
         required: [true, 'Tipo de produto é obrigatório'],

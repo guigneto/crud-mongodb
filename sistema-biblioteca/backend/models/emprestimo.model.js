@@ -4,6 +4,7 @@ const emprestimoSchema = new mongoose.Schema({
     codEmpr: {
         type: String,
         unique: true,
+        sparse: true,
         trim: true,
     },
     idAssoc: {

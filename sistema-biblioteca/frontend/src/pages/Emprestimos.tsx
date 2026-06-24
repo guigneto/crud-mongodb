@@ -113,6 +113,23 @@ export default function Emprestimos() {
     return data.filter((e) => getStatus(e) === s).length
   }
 
+  const getNextId = useCallback(() => {
+    const codes = data
+      .map(e => e.codEmpr)
+      .filter(c => c && c.startsWith('EMP-')) as string[];
+    let maxNum = 0;
+    codes.forEach(c => {
+      const parts = c.split('-');
+      if (parts.length === 2) {
+        const num = parseInt(parts[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    return (offset: number = 0) => `EMP-${String(maxNum + 1 + offset).padStart(5, '0')}`;
+  }, [data]);
+
   function handleReturn(id: string) { setActionModal({ type: 'devolver', id }); setActionError(''); setEstadoFisico('Excelente') }
   function handleRenovar(id: string) { setActionModal({ type: 'renovar', id }); setActionError(''); setCancelReason('') }
   function handleCancelar(id: string) { setActionModal({ type: 'cancelar', id }); setActionError(''); setCancelReason('') }
@@ -138,8 +155,11 @@ export default function Emprestimos() {
 
   async function handleSubmit(form: Form) {
     const ids = form.idExemplares && form.idExemplares.length > 0 ? form.idExemplares : [form.idExemplar].filter(Boolean)
-    for (const id of ids) {
+    const idGenerator = getNextId()
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]
       await createEmprestimo({
+        codEmpr: idGenerator(i),
         idAssoc: form.idAssoc,
         idExemplar: id,
         datRetEmpr: form.datRetEmpr,
@@ -197,7 +217,7 @@ export default function Emprestimos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-gray-600 text-left">
-                <Th>#</Th><Th>Associado</Th><Th>Produto</Th><Th>Retirada</Th><Th>Dev. Prevista</Th><Th>Dev. Efetiva</Th><Th>Status</Th><Th right>Ações</Th>
+                <Th>#</Th><Th>Código</Th><Th>Associado</Th><Th>Produto</Th><Th>Retirada</Th><Th>Dev. Prevista</Th><Th>Dev. Efetiva</Th><Th>Status</Th><Th right>Ações</Th>
               </tr>
             </thead>
             <tbody>
@@ -215,6 +235,7 @@ export default function Emprestimos() {
                 return (
                   <tr key={e._id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-500 text-xs">{rowIndex}</td>
+                    <td className="px-4 py-3 text-gray-500 font-mono text-xs">{e.codEmpr || '—'}</td>
                     
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
@@ -765,12 +786,14 @@ function ExemplarSearchBar({ value, onChange, exemplares, produtos }: {
   const normalize = (str: string) =>
     str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
-  const options = exemplares.map(ex => {
-    const prod = produtos[ex.idProd]
-    const title = prod?.dscTituloProd || 'Desconhecido'
-    const label = ex.codExemplar ? `${title} (ID: ${ex.codExemplar})` : `${title} (ID: ${ex._id})`
-    return { id: ex._id!, label, idProd: ex.idProd }
-  })
+  const options = exemplares
+    .filter(ex => ex.estado !== 'Perdido' && ex.estado !== 'Danificado')
+    .map(ex => {
+      const prod = produtos[ex.idProd]
+      const title = prod?.dscTituloProd || 'Desconhecido'
+      const label = ex.codExemplar ? `${title} (ID: ${ex.codExemplar})` : `${title} (ID: ${ex._id})`
+      return { id: ex._id!, label, idProd: ex.idProd }
+    })
 
   const filtered = query.trim()
     ? options.filter(o => normalize(o.label).includes(normalize(query)) || (o.id || '').includes(query))
@@ -867,12 +890,14 @@ function ExemplarMultiSelect({
 
   const isDigital = (p?: Produto) => p && (['nuvem', 'audiobook', 'software'].includes(p.dscTipoProd) || ['pdf', 'video'].includes(p.dscFormatoProd || ''))
 
-  const options = exemplares.map(ex => {
-    const prod = produtos[ex.idProd]
-    const title = prod?.dscTituloProd || 'Desconhecido'
-    const label = ex.codExemplar ? `${title} (ID: ${ex.codExemplar})` : `${title} (ID: ${ex._id})`
-    return { id: ex._id!, label, idProd: ex.idProd }
-  })
+  const options = exemplares
+    .filter(ex => ex.estado !== 'Perdido' && ex.estado !== 'Danificado')
+    .map(ex => {
+      const prod = produtos[ex.idProd]
+      const title = prod?.dscTituloProd || 'Desconhecido'
+      const label = ex.codExemplar ? `${title} (ID: ${ex.codExemplar})` : `${title} (ID: ${ex._id})`
+      return { id: ex._id!, label, idProd: ex.idProd }
+    })
 
   const filtered = query.trim()
     ? options.filter(o => normalize(o.label).includes(normalize(query)) || (o.id || '').includes(query))
