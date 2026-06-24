@@ -89,13 +89,8 @@ function getCategoriaLabel(tipo: string): string {
   return 'Categoria';
 }
 
-<<<<<<< HEAD
-type Form = { codProd: string; dscTituloProd: string; valMultaDiarProd: string; valVendaProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutores: string[]; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
-const empty: Form = { codProd: '', dscTituloProd: '', valMultaDiarProd: '1.00', valVendaProd: '0.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutores: [], qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
-=======
-type Form = { codProd: string; dscTituloProd: string; valPrecoProd: string; valMultaDiarProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutor: string; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
-const empty: Form = { codProd: '', dscTituloProd: '', valPrecoProd: '0.00', valMultaDiarProd: '1.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutor: '', qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
->>>>>>> 350a645d7b530322f45244520433d9f2e61468e6
+type Form = { codProd: string; dscTituloProd: string; valPrecoProd: string; valMultaDiarProd: string; valVendaProd: string; dscTipoProd: typeof TIPOS[number]; dscFormatoProd: '' | 'pdf' | 'video'; idEditora: string; idAutores: string[]; autores?: any[]; qtdExemplares?: string; numAnoPublProd: string; numISBNProd: string; dscCategoriaProd: string[] }
+const empty: Form = { codProd: '', dscTituloProd: '', valPrecoProd: '0.00', valMultaDiarProd: '1.00', valVendaProd: '0.00', dscTipoProd: 'livro', dscFormatoProd: '', idEditora: '', idAutores: [], qtdExemplares: '1', numAnoPublProd: '', numISBNProd: '', dscCategoriaProd: [] }
 const getMultaForTipo = (tipo: string) => {
   if (['cd', 'dvd'].includes(tipo)) return '2.00';
   if (['nuvem', 'audiobook', 'software'].includes(tipo)) return '0.00';

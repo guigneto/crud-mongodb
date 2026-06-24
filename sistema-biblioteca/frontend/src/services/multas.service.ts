@@ -3,12 +3,8 @@ import api from './api';
 export interface Multa {
   _id?: string;
   idEmpr: string;
-<<<<<<< HEAD
   dscTipMult: 'atraso' | 'dano_perda' | 'atraso_dano';
-=======
-  dscTipMult: 'atraso' | 'dano_perda';
   dscStatusMult: 'PAGO' | 'PENDENTE';
->>>>>>> 350a645d7b530322f45244520433d9f2e61468e6
   valMult: number;
 }
 
