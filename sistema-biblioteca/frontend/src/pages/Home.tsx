@@ -37,18 +37,15 @@ export default function Home() {
           multas:            mData.length,
         })
 
-        // Multas: Pendentes vs Recebidas
-        let pendentes = 0
-        let recebidas = 0
-        mData.forEach(multa => {
-          const pagtosMulta = pgData.filter(pgt => pgt.idMult.toString() === multa._id?.toString())
-          const totalPago = pagtosMulta.reduce((acc, pgt) => acc + pgt.valPagto, 0)
-          if (totalPago >= multa.valMult) recebidas++
-          else pendentes++
-        })
+        // Contabiliza as multas diretamente pelo status
+        const contagem = mData.reduce((acc, multa) => {
+          if (multa.dscStatusMult === 'PAGO') acc.recebidas++
+          else if (multa.dscStatusMult === 'PENDENTE') acc.pendentes++
+          return acc
+        }, { pendentes: 0, recebidas: 0 })
         const multasData = [
-          { name: 'Pendentes', value: pendentes, color: '#ef4444' }, // red-500
-          { name: 'Recebidas', value: recebidas, color: '#eab308' } // yellow-500
+          { name: 'Pendentes', value: contagem.pendentes, color: '#ef4444' }, // red-500
+          { name: 'Recebidas', value: contagem.recebidas, color: '#eab308' } // yellow-500
         ]
 
         const hoje = new Date()

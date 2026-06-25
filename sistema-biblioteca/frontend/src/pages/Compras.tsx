@@ -148,7 +148,7 @@ export default function Compras() {
           {productGroups.map((group) => {
             const prod = group.produto
             const productKey = prod?._id || group.exemplares[0]._id || 'group'
-            const price = prod?.valPrecoProd ?? 0
+            const price = prod?.valVendaProd ?? 0
             return (
               <div key={productKey} className="rounded-3xl border border-gray-200 bg-white shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 bg-gray-50 rounded-t-3xl border-b border-gray-200">
@@ -222,7 +222,7 @@ export default function Compras() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Preço</div>
-                  <div className="font-medium text-gray-900">R$ {(produtos[selected.idProd]?.valPrecoProd ?? 0).toFixed(2)}</div>
+                  <div className="font-medium text-gray-900">R$ {(produtos[selected.idProd]?.valVendaProd ?? 0).toFixed(2)}</div>
                 </div>
               </div>
 
@@ -251,7 +251,7 @@ export default function Compras() {
                     const method = value as FormaPagto
                     setPaymentMethod(method)
                     if (method === 'dinheiro') {
-                      const discount = ((produtos[selected?.idProd ?? '']?.valPrecoProd ?? 0) * 0.1)
+                      const discount = ((produtos[selected?.idProd ?? '']?.valVendaProd ?? 0) * 0.1)
                       setDiscountValue(discount.toFixed(2))
                     } else {
                       setDiscountValue('0')

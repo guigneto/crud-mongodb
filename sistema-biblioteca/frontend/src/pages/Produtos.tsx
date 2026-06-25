@@ -337,7 +337,7 @@ export default function Produtos() {
                 <Th>Código</Th>
                 <Th>Produto</Th>
                 <Th>Preço</Th>
-                <Th>Lançamento</Th>
+                <Th>Publicação</Th>
                 <Th>
                   <ColumnMultiFilter
                     title="Tipo"
@@ -395,6 +395,11 @@ export default function Produtos() {
                         <span> • Gênero: {p.dscCategoriaProd.join(', ')}</span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
+                    {p.valVendaProd != null
+                      ? p.valVendaProd.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      : <span className="text-gray-300">-</span>}
                   </td>
                   <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
                     {p.numAnoPublProd ? formatDate(p.numAnoPublProd) : <span className="text-gray-300">-</span>}
@@ -545,17 +550,13 @@ export default function Produtos() {
               
               <div>
                 <span className="block text-gray-500 text-xs mb-1">Preço de Venda</span>
-                <span className="font-medium text-gray-900">R$ {viewing.valPrecoProd?.toFixed(2)}</span>
+                <span className="font-medium text-gray-900">R$ {viewing.valVendaProd?.toFixed(2)}</span>
               </div>
               <div>
                 <span className="block text-gray-500 text-xs mb-1">Multa Diária (Atraso)</span>
                 <span className="font-medium text-gray-900">R$ {viewing.valMultaDiarProd.toFixed(2)}</span>
               </div>
               
-              <div>
-                <span className="block text-gray-500 text-xs mb-1">Preço (Em caso de Perda/Dano)</span>
-                <span className="font-medium text-gray-900">R$ {(viewing.valVendaProd || 0).toFixed(2)}</span>
-              </div>
             </div>
             
             {viewing.dscTipoProd !== 'nuvem' && viewing.dscTipoProd !== 'audiobook' && (
@@ -1066,16 +1067,13 @@ function ProdutoForm({ initial, existingProducts, onSubmit, onCancel }: { initia
                 type="number"
                 min="0"
                 step="0.01"
-                value={form.valPrecoProd}
-                onChange={s('valPrecoProd')}
+                value={form.valVendaProd}
+                onChange={s('valVendaProd')}
                 className={inp}
               />
             </F>
             <F label="Multa Diária (R$) - Automático">
               <input type="number" disabled value={form.valMultaDiarProd} className={inp + ' bg-gray-50 cursor-not-allowed opacity-75'} />
-            </F>
-            <F label="Preço do Produto (R$)">
-              <input type="number" min="0" step="0.01" value={form.valVendaProd} onChange={s('valVendaProd')} className={inp} />
             </F>
           </div>
         </Section>

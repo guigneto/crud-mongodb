@@ -493,12 +493,11 @@ function PagamentoFormComponent({ valorMulta, onSubmit, onCancel }: { valorMulta
       </F>
       <div className="grid grid-cols-2 gap-4">
         <F label="Valor Pago (R$)" required><input type="number" min="0" step="0.01" value={form.valPagto} onChange={(e) => setForm(f => ({ ...f, valPagto: e.target.value }))} className={inp} /></F>
-        <F label="Desconto (R$)"><input type="number" min="0" step="0.01" value={form.valDescPagto} onChange={(e) => setForm(f => ({ ...f, valDescPagto: e.target.value }))} className={inp} /></F>
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
-      <div className="flex justify-end gap-3 pt-2">
+      <div className="flex justify-between gap-3 pt-2">
         <button type="button" onClick={onCancel} className={btnSec}>Cancelar</button>
-        <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors">{saving ? 'Registrando…' : 'Confirmar Pagamento'}</button>
+        <button type="submit" disabled={saving} className="w-1/2 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors">{saving ? 'Registrando…' : 'Confirmar Pagamento'}</button>
       </div>
     </form>
   )
@@ -518,4 +517,4 @@ function Skeleton() { return <div className="space-y-3">{Array.from({ length: 4 
 const inp    = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 const inpWrap = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm flex items-center gap-1.5 focus-within:ring-2 focus-within:ring-blue-500'
 const btnPri = 'px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors'
-const btnSec = 'px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+const btnSec = 'w-1/2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
